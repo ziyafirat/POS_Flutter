@@ -1,0 +1,67 @@
+name: self_checkout_app
+description: "A self-checkout application with GetX and MVVM architecture"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  get: ^4.6.6
+  
+  # gRPC
+  grpc: ^3.2.4
+  protobuf: ^3.1.0
+  
+  # MQTT
+  mqtt_client: ^10.0.0
+  
+  # HTTP requests
+  http: ^1.1.0
+  
+  # JSON handling
+  json_annotation: ^4.8.1
+  
+  # Image handling
+  cached_network_image: ^3.3.0
+  
+  # Video player for alerts
+  video_player: ^2.8.1
+  
+  # Printing (temporarily disabled due to CMake issues)
+  # printing: ^5.11.1
+  # pdf: ^3.10.4
+  
+  # QR Code scanning
+  qr_code_scanner: ^1.0.1
+  
+  # Local storage
+  shared_preferences: ^2.2.2
+  
+  # Logging
+  logger: ^2.0.2+1
+  
+  # Connectivity
+  connectivity_plus: ^5.0.2
+  
+  # Permissions
+  permission_handler: ^11.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  json_serializable: ^6.7.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/videos/
+  
