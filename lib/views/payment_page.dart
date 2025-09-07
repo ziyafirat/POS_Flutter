@@ -89,7 +89,7 @@ class PaymentPage extends StatelessWidget {
                   // Cash Payment Button
                   SizedBox(
                     width: double.infinity,
-                    height: 80,
+                    height: 70,
                     child: ElevatedButton(
                       onPressed: () {
                         controller.processPayment('cash');
@@ -98,20 +98,21 @@ class PaymentPage extends StatelessWidget {
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        elevation: 5,
+                        elevation: 8,
+                        shadowColor: Colors.black26,
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.money, size: 30),
-                          SizedBox(width: 15),
+                          Icon(Icons.money, size: 28),
+                          SizedBox(width: 12),
                           Text(
                             'Pay with Cash',
                             style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -123,7 +124,7 @@ class PaymentPage extends StatelessWidget {
                   // Card Payment Button
                   SizedBox(
                     width: double.infinity,
-                    height: 80,
+                    height: 70,
                     child: ElevatedButton(
                       onPressed: () {
                         controller.processPayment('card');
@@ -132,20 +133,21 @@ class PaymentPage extends StatelessWidget {
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        elevation: 5,
+                        elevation: 8,
+                        shadowColor: Colors.black26,
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.credit_card, size: 30),
-                          SizedBox(width: 15),
+                          Icon(Icons.credit_card, size: 28),
+                          SizedBox(width: 12),
                           Text(
                             'Pay with Card',
                             style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -165,7 +167,7 @@ class PaymentPage extends StatelessWidget {
                 // Complete Transaction Button
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 55,
                   child: ElevatedButton(
                     onPressed: () {
                       // This would complete the transaction and go to receipt/printing
@@ -175,18 +177,19 @@ class PaymentPage extends StatelessWidget {
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      elevation: 3,
+                      elevation: 8,
+                      shadowColor: Colors.black26,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle, size: 20),
-                        SizedBox(width: 8),
+                        Icon(Icons.check_circle, size: 22),
+                        SizedBox(width: 10),
                         Text(
                           'Complete Transaction',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -196,24 +199,24 @@ class PaymentPage extends StatelessWidget {
                 // Back Button
                 SizedBox(
                   width: double.infinity,
-                  height: 45,
+                  height: 50,
                   child: OutlinedButton(
                     onPressed: () => controller.navigateToItemScan(),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.grey[600],
                       side: BorderSide(color: Colors.grey[400]!),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.arrow_back, size: 18),
-                        SizedBox(width: 8),
+                        Icon(Icons.arrow_back, size: 20),
+                        SizedBox(width: 10),
                         Text(
                           'Back to Items',
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),

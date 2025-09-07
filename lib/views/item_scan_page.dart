@@ -163,20 +163,21 @@ class ItemScanPage extends StatelessWidget {
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      elevation: 5,
+                      elevation: 8,
+                      shadowColor: Colors.black26,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.payment, size: 24),
-                        SizedBox(width: 10),
+                        SizedBox(width: 12),
                         Text(
                           'Finish & Proceed to Payment',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -187,7 +188,7 @@ class ItemScanPage extends StatelessWidget {
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  height: 45,
+                  height: 50,
                   child: OutlinedButton(
                     onPressed: () {
                       // Simulate scanning an item
@@ -198,17 +199,17 @@ class ItemScanPage extends StatelessWidget {
                       foregroundColor: Colors.blue,
                       side: const BorderSide(color: Colors.blue, width: 2),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.add_shopping_cart, size: 20),
-                        SizedBox(width: 8),
+                        SizedBox(width: 10),
                         Text(
                           'Add Test Item (Simulate Scan)',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),

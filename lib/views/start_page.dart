@@ -69,95 +69,107 @@ class StartPage extends StatelessWidget {
             const SizedBox(height: 60),
             
             // Start Button
-            ElevatedButton(
-              onPressed: () {
-                controller.clearScannedItems(); // Clear any previous items
-                controller.navigateToItemScan();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                elevation: 5,
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.shopping_cart, size: 24),
-                  SizedBox(width: 10),
-                  Text(
-                    'Start New Transaction',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+            SizedBox(
+              width: 280,
+              height: 60,
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.clearScannedItems(); // Clear any previous items
+                  controller.navigateToItemScan();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
+                  elevation: 8,
+                  shadowColor: Colors.black26,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.shopping_cart, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'Start New Transaction',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
             
             // Assistant Page Button
-            ElevatedButton(
-              onPressed: () {
-                controller.navigateToAssistant();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                elevation: 5,
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.settings, size: 24),
-                  SizedBox(width: 10),
-                  Text(
-                    'Assistant & Settings',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+            SizedBox(
+              width: 280,
+              height: 60,
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.navigateToAssistant();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
+                  elevation: 8,
+                  shadowColor: Colors.black26,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.settings, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'Assistant & Settings',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 15),
             
             // gRPC Test Button
-            ElevatedButton(
-              onPressed: () {
-                controller.testGrpcConnection();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                elevation: 5,
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.network_check, size: 24),
-                  SizedBox(width: 10),
-                  Text(
-                    'Test gRPC Connection',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+            SizedBox(
+              width: 280,
+              height: 60,
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.testGrpcConnection();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
+                  elevation: 8,
+                  shadowColor: Colors.black26,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.network_check, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'Test gRPC Connection',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
