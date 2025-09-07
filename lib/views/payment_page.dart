@@ -89,7 +89,7 @@ class PaymentPage extends StatelessWidget {
                   // Cash Payment Button
                   SizedBox(
                     width: double.infinity,
-                    height: 70,
+                    height: 50,
                     child: ElevatedButton(
                       onPressed: () {
                         controller.processPayment('cash');
@@ -106,12 +106,12 @@ class PaymentPage extends StatelessWidget {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.money, size: 28),
+                          Icon(Icons.money, size: 24),
                           SizedBox(width: 12),
                           Text(
                             'Pay with Cash',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -124,7 +124,7 @@ class PaymentPage extends StatelessWidget {
                   // Card Payment Button
                   SizedBox(
                     width: double.infinity,
-                    height: 70,
+                    height: 50,
                     child: ElevatedButton(
                       onPressed: () {
                         controller.processPayment('card');
@@ -141,12 +141,12 @@ class PaymentPage extends StatelessWidget {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.credit_card, size: 28),
+                          Icon(Icons.credit_card, size: 24),
                           SizedBox(width: 12),
                           Text(
                             'Pay with Card',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -167,7 +167,7 @@ class PaymentPage extends StatelessWidget {
                 // Complete Transaction Button
                 SizedBox(
                   width: double.infinity,
-                  height: 55,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: () {
                       // This would complete the transaction and go to receipt/printing
@@ -185,8 +185,8 @@ class PaymentPage extends StatelessWidget {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle, size: 22),
-                        SizedBox(width: 10),
+                        Icon(Icons.check_circle, size: 24),
+                        SizedBox(width: 12),
                         Text(
                           'Complete Transaction',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -212,8 +212,8 @@ class PaymentPage extends StatelessWidget {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.arrow_back, size: 20),
-                        SizedBox(width: 10),
+                        Icon(Icons.arrow_back, size: 24),
+                        SizedBox(width: 12),
                         Text(
                           'Back to Items',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

@@ -71,7 +71,7 @@ class StartPage extends StatelessWidget {
             // Start Button
             SizedBox(
               width: 280,
-              height: 60,
+              height: 50,
               child: ElevatedButton(
                 onPressed: () {
                   controller.clearScannedItems(); // Clear any previous items
@@ -107,7 +107,7 @@ class StartPage extends StatelessWidget {
             // Assistant Page Button
             SizedBox(
               width: 280,
-              height: 60,
+              height: 50,
               child: ElevatedButton(
                 onPressed: () {
                   controller.navigateToAssistant();
@@ -142,7 +142,7 @@ class StartPage extends StatelessWidget {
             // gRPC Test Button
             SizedBox(
               width: 280,
-              height: 60,
+              height: 50,
               child: ElevatedButton(
                 onPressed: () {
                   controller.testGrpcConnection();

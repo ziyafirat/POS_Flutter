@@ -145,7 +145,7 @@ class ItemScanPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  height: 60,
+                  height: 50,
                   child: Obx(() {
                     final isEmpty = controller.scannedItems.isEmpty;
                     final totalAmount = controller.totalAmount;
