@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
+import '../controllers/language_controller.dart';
 
 class PrintingPage extends StatefulWidget {
   const PrintingPage({super.key});
@@ -13,6 +14,8 @@ class _PrintingPageState extends State<PrintingPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
+  int _countdown = 5;
+  bool _printingCompleted = false;
 
   @override
   void initState() {
@@ -30,7 +33,10 @@ class _PrintingPageState extends State<PrintingPage>
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         _animationController.stop();
-        _showCompletionDialog();
+        setState(() {
+          _printingCompleted = true;
+        });
+        _startCountdown();
       }
     });
   }
@@ -41,86 +47,128 @@ class _PrintingPageState extends State<PrintingPage>
     super.dispose();
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Receipt Printed'),
-        content: const Text('Your receipt has been printed successfully!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Get.find<AppController>().navigateToStart();
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+  void _startCountdown() {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _countdown--;
+        });
+        if (_countdown > 0) {
+          _startCountdown();
+        } else {
+          Get.find<AppController>().navigateToStart();
+        }
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
+    final LanguageController langController = Get.find<LanguageController>();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Printer Animation
-            AnimatedBuilder(
-              animation: _rotationAnimation,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: _rotationAnimation.value * 2 * 3.14159,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.print,
-                      size: 60,
-                      color: Colors.blue,
-                    ),
+      body: GetBuilder<LanguageController>(
+        builder: (langCtrl) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+            // Printer Animation or Check Icon
+            _printingCompleted 
+              ? Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 60,
+                    color: Colors.white,
+                  ),
+                )
+              : AnimatedBuilder(
+                  animation: _rotationAnimation,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _rotationAnimation.value * 2 * 3.14159,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.print,
+                          size: 60,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    );
+                  },
+                ),
             const SizedBox(height: 40),
             
-            // Printing Text
-            const Text(
-              'Printing Receipt',
+            // Status Text
+            Text(
+              _printingCompleted 
+                ? (langCtrl.isEnglish ? 'Thank you for shopping!' : 'Alışveriş için teşekkürler!')
+                : 'Printing Receipt',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: _printingCompleted ? Colors.green : Colors.blue,
               ),
             ),
             const SizedBox(height: 20),
             
-            const Text(
-              'Please wait while we print your receipt...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            // Countdown Timer or Waiting Text
+            _printingCompleted 
+              ? Column(
+                  children: [
+                    Text(
+                      langCtrl.isEnglish ? 'Returning to start page in' : 'Başlangıç sayfasına dönülüyor',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '$_countdown',
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                )
+              : const Text(
+                  'Please wait while we print your receipt...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
             const SizedBox(height: 40),
             
             // Receipt Preview
@@ -189,7 +237,7 @@ class _PrintingPageState extends State<PrintingPage>
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }

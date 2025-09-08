@@ -14,7 +14,7 @@ class GrpcService {
   bool _isConnected = false;
 
   // Connection details - UPDATE THESE TO YOUR REAL SERVER
-  static const String host = 'localhost';  // Change to your server IP/domain
+  static const String host = '192.168.3.5';  // Change to your server IP/domain
   static const int port = 50051;           // Change to your server port
   static const String companyId = 'pos';
   static const String storeId = 'paladium';

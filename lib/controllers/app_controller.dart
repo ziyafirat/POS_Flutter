@@ -6,6 +6,7 @@ import '../models/app_state.dart';
 import '../models/alert_message.dart';
 import '../services/grpc_service.dart';
 import '../services/mqtt_service.dart';
+import 'language_controller.dart';
 
 class AppController extends GetxController {
   final Logger _logger = Logger();
@@ -38,6 +39,8 @@ class AppController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Initialize language controller
+    Get.put(LanguageController());
     _initializeServices();
     _setupAlertListener();
   }
