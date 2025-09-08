@@ -9,6 +9,7 @@ import 'views/printing_page.dart';
 import 'views/error_page.dart';
 import 'views/alert_page.dart';
 import 'views/assistant_page.dart';
+import 'views/pos_cashier_page.dart';
 import 'models/app_state.dart';
 
 void main() {
@@ -58,6 +59,8 @@ class MainNavigationWrapper extends StatelessWidget {
           return const AlertPage();
         case AppScreen.assistant:
           return const AssistantPage();
+        case AppScreen.posCashier:
+          return const PosCashierPage();
       }
     });
   }

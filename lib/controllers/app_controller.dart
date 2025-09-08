@@ -6,6 +6,7 @@ import '../models/app_state.dart';
 import '../models/alert_message.dart';
 import '../services/grpc_service.dart';
 import '../services/mqtt_service.dart';
+import '../services/web_api_service.dart';
 import 'language_controller.dart';
 
 class AppController extends GetxController {
@@ -25,6 +26,7 @@ class AppController extends GetxController {
   final Rx<AlertMessage?> _currentAlert = Rx<AlertMessage?>(null);
   final RxList<String> _scannedItems = <String>[].obs;
   final RxDouble _totalAmount = 0.0.obs;
+  final RxString _terminalId = '500'.obs;
 
   // Getters
   Rx<AppState> get appState => _appState;
@@ -32,6 +34,7 @@ class AppController extends GetxController {
   List<String> get scannedItems => _scannedItems;
   double get totalAmount => _totalAmount.value;
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
+  String? get terminalId => _terminalId.value;
 
   // Stream subscriptions
   StreamSubscription<AlertMessage>? _alertSubscription;
@@ -39,8 +42,9 @@ class AppController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Initialize language controller
+    // Initialize controllers
     Get.put(LanguageController());
+    Get.put(WebApiService());
     _initializeServices();
     _setupAlertListener();
   }
@@ -48,8 +52,16 @@ class AppController extends GetxController {
   @override
   void onClose() {
     _alertSubscription?.cancel();
-    _grpcService.disconnect();
     _mqttService.disconnect();
+    
+    // Stop Web API Service
+    try {
+      final webApiService = Get.find<WebApiService>();
+      webApiService.stopApiLoop();
+    } catch (e) {
+      _logger.w('WebApiService not found or already closed: $e');
+    }
+    
     super.onClose();
   }
 
@@ -57,18 +69,17 @@ class AppController extends GetxController {
     try {
       _logger.i('Initializing services...');
       
-      // Connect to gRPC
-      final grpcConnected = await _grpcService.connect();
-      _updateGrpcStatus(grpcConnected ? ConnectionStatus.connected : ConnectionStatus.error);
-
       // Connect to MQTT
       final mqttConnected = await _mqttService.connect();
       _updateMqttStatus(mqttConnected ? ConnectionStatus.connected : ConnectionStatus.error);
 
-      // If both connections fail, go to error screen
-      if (!grpcConnected && !mqttConnected) {
-        _navigateToScreen(AppScreen.error, errorMessage: 'Connection failed');
-      }
+      // Start Web API Service
+      final webApiService = Get.find<WebApiService>();
+      webApiService.startApiLoop();
+      _logger.i('Web API Service started');
+
+      // Set GRPC as disconnected since we're not using it
+      _updateGrpcStatus(ConnectionStatus.disconnected);
     } catch (e) {
       _logger.e('Service initialization failed: $e');
       _navigateToScreen(AppScreen.error, errorMessage: e.toString());
@@ -180,16 +191,18 @@ class AppController extends GetxController {
     _navigateToScreen(AppScreen.assistant);
   }
 
+  void navigateToPosCashier() {
+    _navigateToScreen(AppScreen.posCashier);
+  }
+
   // Item management
-  void addScannedItem(String itemId) {
-    _scannedItems.add(itemId);
-    _totalAmount.value += 10.0; // Mock price
-    _logger.i('Added item: $itemId, Total: ${_totalAmount.value}');
+  void addScannedItem(String item) {
+    _scannedItems.add(item);
+    _logger.i('Added scanned item: $item');
   }
 
   void clearScannedItems() {
     _scannedItems.clear();
-    _totalAmount.value = 0.0;
     _logger.i('Cleared scanned items');
   }
 
@@ -353,5 +366,34 @@ class AppController extends GetxController {
 
   void simulateAlert() {
     _mqttService.simulateAlert();
+  }
+  
+  // Public navigation method
+  void navigateToScreen(AppScreen screen, {String? errorMessage}) {
+    _navigateToScreen(screen, errorMessage: errorMessage);
+  }
+  
+  // Update total amount method
+  void updateTotalAmount(double amount) {
+    _totalAmount.value = amount;
+    _logger.d('Updated total amount: $amount');
+  }
+  
+  // Display text for API Display field
+  final RxString _displayText = ''.obs;
+  String get displayText => _displayText.value;
+  
+  void updateDisplayText(String text) {
+    _displayText.value = text;
+    _logger.d('Updated display text: $text');
+  }
+  
+  // PosSubState for API response
+  final RxString _posSubState = ''.obs;
+  String get posSubState => _posSubState.value;
+  
+  void updatePosSubState(String state) {
+    _posSubState.value = state;
+    _logger.d('Updated PosSubState: $state');
   }
 }

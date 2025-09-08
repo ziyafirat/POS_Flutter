@@ -22,6 +22,69 @@ class ItemScanPage extends StatelessWidget {
               color: Colors.white,
               child: Column(
                 children: [
+                  // Display text from API
+                  Obx(() => (controller.displayText.isNotEmpty || controller.posSubState.isNotEmpty)
+                      ? Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          color: Colors.blue[100],
+                          child: Row(
+                            children: [
+                              if (controller.posSubState.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[200],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    controller.posSubState,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ),
+                              if (controller.posSubState.isNotEmpty && controller.displayText.isNotEmpty)
+                                const SizedBox(width: 8),
+                              if (controller.displayText.isNotEmpty)
+                                Expanded(
+                                  child: Text(
+                                    controller.displayText,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              const SizedBox(width: 8),
+                              // Small POS Cashier button
+                              SizedBox(
+                                height: 24,
+                                child: ElevatedButton(
+                                  onPressed: () => controller.navigateToPosCashier(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.purple,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'POS',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink()),
                   // Top gray area for product display
                   Expanded(
                     flex: 2,
@@ -94,7 +157,14 @@ class ItemScanPage extends StatelessWidget {
                               return ListView.builder(
                                 itemCount: controller.scannedItems.length,
                                 itemBuilder: (context, index) {
-                                  final itemId = controller.scannedItems[index];
+                                  final itemString = controller.scannedItems[index];
+                                  // Parse item format: barcode:displayName:uom:price:qty:vr
+                                  final parts = itemString.split(':');
+                                  final displayName = parts.length > 1 ? parts[1] : 'Unknown Item';
+                                  final price = parts.length > 3 ? parts[3] : '0.00';
+                                  final qty = parts.length > 4 ? parts[4] : '1';
+                                  final uom = parts.length > 2 ? parts[2] : '';
+                                  
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     padding: const EdgeInsets.all(12),
@@ -106,16 +176,29 @@ class ItemScanPage extends StatelessWidget {
                                     child: Row(
                                       children: [
                                         Expanded(
-                                          child: Text(
-                                            '$itemId - Item Name',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                displayName,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              if (uom.isNotEmpty)
+                                                Text(
+                                                  'Qty: $qty $uom',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                            ],
                                           ),
                                         ),
                                         Text(
-                                          '4,45 TL',
+                                          '$price TL',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,

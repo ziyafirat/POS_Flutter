@@ -11,6 +11,7 @@ enum AppScreen {
   error,
   alert,
   assistant,
+  posCashier,
 }
 
 enum ConnectionStatus {

@@ -27,6 +27,73 @@ class StartPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Display text from API
+            Obx(() => (controller.displayText.isNotEmpty || controller.posSubState.isNotEmpty)
+                ? Container(
+                    margin: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blue, width: 2),
+                    ),
+                    child: Row(
+                      children: [
+                        if (controller.posSubState.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[100],
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              controller.posSubState,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        if (controller.posSubState.isNotEmpty && controller.displayText.isNotEmpty)
+                          const SizedBox(width: 10),
+                        if (controller.displayText.isNotEmpty)
+                          Expanded(
+                            child: Text(
+                              controller.displayText,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        const SizedBox(width: 10),
+                        // Small POS Cashier button
+                        SizedBox(
+                          height: 24,
+                          child: ElevatedButton(
+                            onPressed: () => controller.navigateToPosCashier(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            child: const Text(
+                              'POS',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink()),
             // Logo/Image placeholder
             Container(
               width: 200,
@@ -194,6 +261,41 @@ class StartPage extends StatelessWidget {
                     SizedBox(width: 12),
                     Text(
                       'Test gRPC Connection',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            
+            // POS Cashier Button
+            SizedBox(
+              width: 280,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.navigateToPosCashier();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 8,
+                  shadowColor: Colors.black26,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.point_of_sale, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'POS Cashier',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
