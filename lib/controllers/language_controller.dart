@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 class LanguageController extends GetxController {
   static LanguageController get to => Get.find();
   
-  // Current language (true = English, false = Turkish)
+  // Current language (true = English, false = Arabic)
   final _isEnglish = false.obs;
   
   bool get isEnglish => _isEnglish.value;
@@ -19,67 +19,76 @@ class LanguageController extends GetxController {
   }
   
   // Text getters for common UI elements
-  String get languageButtonText => isEnglish ? 'Türkçe' : 'English';
+  String get languageButtonText => isEnglish ? 'العربية' : 'English';
   
-  String get productSearch => isEnglish ? 'Search Product' : 'Ürün Ara';
-  String get carrefourCard => isEnglish ? 'CarrefourSA Card' : 'CarrefourSA Kart';
-  String get enterBarcode => isEnglish ? 'Enter Barcode' : 'Barkod\'u Tuşlayın';
-  String get callHelp => isEnglish ? 'Call for Help' : 'Yardım Çağır';
-  String get finishAndPay => isEnglish ? 'Finish & Pay' : 'Bitir ve Öde';
-  String get addTestItem => isEnglish ? 'Add Test Item' : 'Test Item Ekle';
+  String get productSearch => isEnglish ? 'Search Product' : 'البحث عن المنتج';
+  String get carrefourCard => isEnglish ? 'CarrefourSA Card' : 'بطاقة كارفور';
+  String get enterBarcode => isEnglish ? 'Enter Barcode' : 'أدخل الباركود';
+  String get callHelp => isEnglish ? 'Call for Help' : 'طلب المساعدة';
+  String get finishAndPay => isEnglish ? 'Finish & Pay' : 'إنهاء ودفع';
+  String get addTestItem => isEnglish ? 'Add Test Item' : 'إضافة عنصر تجريبي';
   
   // Payment page texts
-  String get makeSelection => isEnglish ? 'Make Your Selection Now' : 'Şimdi Seçiminizi Yapın';
-  String get cash => isEnglish ? 'Cash' : 'Nakit';
-  String get credit => isEnglish ? 'Credit' : 'Kredi';
-  String get paymentWithChange => isEnglish ? 'Payment with Change' : 'Bozuk Para Üstü İle Ödeme';
-  String get paymentWithStaffCard => isEnglish ? 'Payment with Staff Card' : 'Personel Kart İle Ödeme';
-  String get returnScanMore => isEnglish ? 'RETURN\nScan More Items' : 'GERİ\nDaha Fazla Ürün Tara';
-  String get requestHelp => isEnglish ? 'Request Help' : 'Yardım İste';
+  String get makeSelection => isEnglish ? 'Make Your Selection Now' : 'اختر الآن';
+  String get cash => isEnglish ? 'Cash' : 'نقداً';
+  String get credit => isEnglish ? 'Credit' : 'ائتمان';
+  String get paymentWithChange => isEnglish ? 'Payment with Change' : 'دفع مع الباقي';
+  String get paymentWithStaffCard => isEnglish ? 'Payment with Staff Card' : 'دفع ببطاقة الموظف';
+  String get returnScanMore => isEnglish ? 'RETURN\nScan More Items' : 'إرجاع\nمسح المزيد من العناصر';
+  String get requestHelp => isEnglish ? 'Request Help' : 'طلب المساعدة';
   
   // Item list texts
-  String get noItemsScanned => isEnglish ? 'No items scanned yet' : 'Henüz ürün taranmadı';
-  String get shoppingTotal => isEnglish ? 'Shopping Total:' : 'Alışveriş Tutarı:';
+  String get noItemsScanned => isEnglish ? 'No items scanned yet' : 'لم يتم مسح أي عناصر بعد';
+  String get shoppingTotal => isEnglish ? 'Shopping Total:' : 'إجمالي التسوق:';
   String get discountDisclaimer => isEnglish 
       ? 'Campaigns and discounts will be applied after "Finish and Pay".'
-      : 'Kampanya ve indirimler "Bitir ve Öde" den sonra uygulanacaktır.';
+      : 'سيتم تطبيق الحملات والخصومات بعد "إنهاء ودفع".';
   
   // Transaction summary texts
-  String get subtotal => isEnglish ? 'Subtotal:' : 'Ara Toplam:';
-  String get campaignDiscount => isEnglish ? 'Campaign Discount:' : 'Kampanya İnd. Top:';
-  String get total => isEnglish ? 'TOTAL:' : 'TOPLAM:';
+  String get subtotal => isEnglish ? 'Subtotal:' : 'المجموع الفرعي:';
+  String get campaignDiscount => isEnglish ? 'Campaign Discount:' : 'خصم الحملة:';
+  String get total => isEnglish ? 'TOTAL:' : 'المجموع:';
   
   // Scale texts
-  String get version => isEnglish ? 'Version' : 'Versiyon';
+  String get version => isEnglish ? 'Version' : 'الإصدار';
   
   // Instructions
   String get scanInstruction => isEnglish 
       ? 'Scan the product and place it in the bag'
-      : 'Ürünü okutunuz ve poşete yerleştiriniz';
+      : 'امسح المنتج وضعه في الحقيبة';
   
   // Start page texts
   String get welcomeTitle => isEnglish 
       ? 'Welcome to Self-Checkout'
-      : 'Self-Checkout\'a Hoş Geldiniz';
+      : 'مرحباً بك في الدفع الذاتي';
   
   String get welcomeSubtitle => isEnglish 
       ? 'Please scan your items to begin'
-      : 'Başlamak için ürünlerinizi tarayın';
+      : 'يرجى مسح عناصرك للبدء';
   
   String get startShopping => isEnglish 
       ? 'Start Shopping'
-      : 'Alışverişe Başla';
+      : 'ابدأ التسوق';
   
   String get assistant => isEnglish 
       ? 'Assistant'
-      : 'Asistan';
+      : 'المساعد';
   
   // Printing page texts
   String get thankYouForShopping => isEnglish 
       ? 'Thank you for shopping!'
-      : 'Alışveriş için teşekkürler!';
+      : 'شكراً لك على التسوق!';
   
   String get returningToStart => isEnglish 
       ? 'Returning to start page in'
-      : 'Başlangıç sayfasına dönülüyor';
+      : 'العودة إلى الصفحة الرئيسية خلال';
+  
+  // Currency support
+  String get currencySymbol => 'AED';
+  String get currencyName => isEnglish ? 'Dirham' : 'درهم';
+  
+  // Format currency with AED symbol
+  String formatCurrency(double amount) {
+    return '$amount $currencySymbol';
+  }
 }

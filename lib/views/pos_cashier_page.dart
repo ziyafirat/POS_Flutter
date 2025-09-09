@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
+import '../controllers/language_controller.dart';
 import '../services/web_api_service.dart';
 
 class PosCashierPage extends StatefulWidget {
@@ -12,17 +14,177 @@ class PosCashierPage extends StatefulWidget {
 
 class _PosCashierPageState extends State<PosCashierPage> {
   String _numberInput = '';
+  final Logger _logger = Logger();
 
   @override
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
     final WebApiService webApiService = Get.find<WebApiService>();
+    final LanguageController langController = Get.find<LanguageController>();
+    
+    // Test log to verify logging is working
+    print('🚀 POS Cashier Page loaded - logging is working!');
+    _logger.i('POS Cashier Page loaded - logging is working!');
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
       body: Row(
         children: [
-          // Left Side - Buttons
+          // Left Side - Items List
+          Expanded(
+            flex: 3,
+            child: Container(
+              color: Colors.white,
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(15),
+                    color: Colors.blue[50],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Obx(() => Text(
+                          'Total: ${controller.totalAmount.toStringAsFixed(2)} TL',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        )),
+                        Row(
+                          children: [
+                            Text(
+                              'Terminal: 500',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Text(
+                              'Operator: 500',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Obx(() => Text(
+                              controller.posSubState.isNotEmpty ? controller.posSubState : '10-1001',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            )),
+                            const SizedBox(width: 15),
+                            Text(
+                              'Online',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.green[600],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Items List
+                  Expanded(
+                    child: Obx(() {
+                      if (controller.scannedItems.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No items scanned',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(15),
+                        itemCount: controller.scannedItems.length,
+                        itemBuilder: (context, index) {
+                          final itemString = controller.scannedItems[index];
+                          // Parse item format: barcode:displayName:uom:price:qty:vr
+                          final parts = itemString.split(':');
+                          final displayName = parts.length > 1 ? parts[1] : 'Unknown Item';
+                          final price = parts.length > 3 ? parts[3] : '0.00';
+                          final qty = parts.length > 4 ? parts[4] : '1';
+                          final uom = parts.length > 2 ? parts[2] : '';
+                          
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.shopping_cart,
+                                  color: Colors.blue[600],
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        displayName,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Qty: $qty Unit: $uom',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  langController.formatCurrency(double.tryParse(price) ?? 0.0),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle, size: 24),
+                                  onPressed: () => controller.removeScannedItem(index),
+                                  color: Colors.red[600],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Right Side - Buttons
           Expanded(
             flex: 2,
             child: Container(
@@ -410,160 +572,6 @@ class _PosCashierPageState extends State<PosCashierPage> {
               ),
             ),
           ),
-          
-          // Right Side - Items List
-          Expanded(
-            flex: 3,
-            child: Container(
-              color: Colors.white,
-              child: Column(
-                children: [
-                  // Header
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(15),
-                    color: Colors.blue[50],
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Obx(() => Text(
-                          'Total: ${controller.totalAmount.toStringAsFixed(2)} TL',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        )),
-                        Row(
-                          children: [
-                            Text(
-                              'Terminal: 500',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-                            Text(
-                              'Operator: 500',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-                            Obx(() => Text(
-                              controller.posSubState.isNotEmpty ? controller.posSubState : '10-1001',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            )),
-                            const SizedBox(width: 15),
-                            Text(
-                              'Online',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.green[600],
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Items List
-                  Expanded(
-                    child: Obx(() {
-                      if (controller.scannedItems.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No items scanned',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        );
-                      }
-                      
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(15),
-                        itemCount: controller.scannedItems.length,
-                        itemBuilder: (context, index) {
-                          final itemString = controller.scannedItems[index];
-                          // Parse item format: barcode:displayName:uom:price:qty:vr
-                          final parts = itemString.split(':');
-                          final displayName = parts.length > 1 ? parts[1] : 'Unknown Item';
-                          final price = parts.length > 3 ? parts[3] : '0.00';
-                          final qty = parts.length > 4 ? parts[4] : '1';
-                          final uom = parts.length > 2 ? parts[2] : '';
-                          
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(15),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue[200]!),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.shopping_cart,
-                                  color: Colors.blue[600],
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 15),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        displayName,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Qty: $qty Unit: $uom',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '$price TL',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue[700],
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle, size: 24),
-                                  onPressed: () => controller.removeScannedItem(index),
-                                  color: Colors.red[600],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -624,10 +632,30 @@ class _PosCashierPageState extends State<PosCashierPage> {
     // Combine number input with command (e.g., "1<80>" if number input is "1" and command is "<80>")
     String combinedCommand = _numberInput + displayLine;
     
+    // Log the action button request - using both print and logger for visibility
+    print('🔘 ACTION BUTTON REQUEST');
+    print('📱 Screen: POS Cashier');
+    print('⌨️  Number Input: "${_numberInput.isEmpty ? "(empty)" : _numberInput}"');
+    print('🎯 Display Line: "$displayLine"');
+    print('📤 Combined Command: "$combinedCommand"');
+    print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    _logger.i('ACTION BUTTON REQUEST');
+    _logger.i('Screen: POS Cashier');
+    _logger.i('Number Input: "${_numberInput.isEmpty ? "(empty)" : _numberInput}"');
+    _logger.i('Display Line: "$displayLine"');
+    _logger.i('Combined Command: "$combinedCommand"');
+    _logger.i('Timestamp: ${DateTime.now().toIso8601String()}');
+    _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+
+    _numberInput='';
     // Send one-time API request with the combined DisplayLine
     webApiService.sendOneTimeRequest(combinedCommand);
     
     // Clear the number input after sending command
     _clearNumberInput();
   }
+
 }

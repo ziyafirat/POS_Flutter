@@ -1,10 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
+import '../services/web_api_service.dart';
 
 class PaymentPage extends StatelessWidget {
   const PaymentPage({super.key});
+
+  static final Logger _logger = Logger();
+
+  static String _formatAmountForApi(double amount) {
+    // Convert to cents (remove decimal point)
+    // Example: 12.50 -> 1250
+    int amountInCents = (amount * 100).round();
+    return amountInCents.toString();
+  }
+
+  static Future<void> _handleCashPayment(AppController controller) async {
+    try {
+      // Set processing state
+      controller.setProcessingPayment(true);
+      
+      // Get WebApiService instance
+      final webApiService = Get.find<WebApiService>();
+      
+      // Get the total amount and format it without decimal point
+      double totalAmount = controller.totalAmount;
+      String formattedAmount = _formatAmountForApi(totalAmount);
+      
+      // Send API request with amount + <91>
+      String cashCommand = '$formattedAmount<91>';
+      
+      // Log the action button request - using both print and logger for visibility
+      print('🔘 ACTION BUTTON REQUEST');
+      print('📱 Screen: Payment Page');
+      print('💰 Payment Method: Cash');
+      print('💵 Total Amount: $totalAmount');
+      print('🔢 Formatted Amount: $formattedAmount');
+      print('🎯 Display Line: <91>');
+      print('📤 Combined Command: "$cashCommand"');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      _logger.i('ACTION BUTTON REQUEST');
+      _logger.i('Screen: Payment Page');
+      _logger.i('Payment Method: Cash');
+      _logger.i('Total Amount: $totalAmount');
+      _logger.i('Formatted Amount: $formattedAmount');
+      _logger.i('Display Line: <91>');
+      _logger.i('Combined Command: "$cashCommand"');
+      _logger.i('Timestamp: ${DateTime.now().toIso8601String()}');
+      _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      await webApiService.sendOneTimeRequest(cashCommand);
+      
+      // Process payment after API request
+      controller.processPayment('cash');
+      
+    } catch (e) {
+      // Log error
+      _logger.e('❌ CASH PAYMENT ERROR: $e');
+      
+      // Handle error - show snackbar
+      Get.snackbar(
+        'Error',
+        'Failed to process cash payment: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      // Reset processing state
+      controller.setProcessingPayment(false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,78 +83,134 @@ class PaymentPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      body: Row(
+      body: Column(
         children: [
-          // Left Side - Item List and Details
+          // Header with Almaya logo and status (10% of screen)
+          Container(
+            height: MediaQuery.of(context).size.height * 0.1,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Color(0xFFE31E24), Color(0xFFC41E3A)], // Almaya red colors
+              ),
+            ),
+            child: Row(
+              children: [
+                // Almaya Logo
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'A',
+                            style: TextStyle(
+                              color: Color(0xFFE31E24),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'almaya',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'supermarket',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Display text and POS button - Always visible
+                Flexible(
+                  child: Obx(() => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // PosSubState display
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              controller.posSubState.isNotEmpty ? controller.posSubState : 'N/A',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Display text
+                          Flexible(
+                            child: Text(
+                              controller.displayText.isNotEmpty ? controller.displayText : 'System Ready',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Small POS Cashier button
+                          SizedBox(
+                            height: 24,
+                            child: ElevatedButton(
+                              onPressed: () => controller.navigateToPosCashier(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFFE31E24),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              child: const Text(
+                                'POS',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )),
+                ),
+                const SizedBox(width: 16),
+              ],
+            ),
+          ),
+          // Main content area (80% of screen)
           Expanded(
-            flex: 3,
+            flex: 8,
             child: Container(
               color: Colors.white,
               child: Column(
                 children: [
-                  // Display text from API
-                  Obx(() => (controller.displayText.isNotEmpty || controller.posSubState.isNotEmpty)
-                      ? Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          color: Colors.blue[100],
-                          child: Row(
-                            children: [
-                              if (controller.posSubState.isNotEmpty)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[200],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    controller.posSubState,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ),
-                              if (controller.posSubState.isNotEmpty && controller.displayText.isNotEmpty)
-                                const SizedBox(width: 8),
-                              if (controller.displayText.isNotEmpty)
-                                Expanded(
-                                  child: Text(
-                                    controller.displayText,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              const SizedBox(width: 8),
-                              // Small POS Cashier button
-                              SizedBox(
-                                height: 24,
-                                child: ElevatedButton(
-                                  onPressed: () => controller.navigateToPosCashier(),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.purple,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    minimumSize: Size.zero,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'POS',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : const SizedBox.shrink()),
                   // Top gray area for product display
                   Expanded(
                     flex: 2,
@@ -129,7 +255,7 @@ class PaymentPage extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 10),
                 const Text(
-                                  'DOĞRUSU CarrefourSA',
+                                  'ALMAYA',
                   style: TextStyle(
                                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -198,7 +324,7 @@ class PaymentPage extends StatelessWidget {
                                           ),
                                         ),
                                         Text(
-                                          '$price TL',
+                                          langController.formatCurrency(double.tryParse(price) ?? 0.0),
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
@@ -235,7 +361,7 @@ class PaymentPage extends StatelessWidget {
                   style: const TextStyle(fontSize: 16),
                                     ),
                                     Text(
-                                      '${controller.totalAmount.toStringAsFixed(2)} TL',
+                                      langController.formatCurrency(controller.totalAmount),
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -251,9 +377,9 @@ class PaymentPage extends StatelessWidget {
                                       langController.campaignDiscount,
                                       style: const TextStyle(fontSize: 16),
                                     ),
-                                    const Text(
-                                      '0,00 TL',
-                                      style: TextStyle(
+                                    Text(
+                                      langController.formatCurrency(0.0),
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.red,
@@ -273,7 +399,7 @@ class PaymentPage extends StatelessWidget {
                       ),
                     ),
                     Text(
-                                      '${controller.totalAmount.toStringAsFixed(2)} TL',
+                                      langController.formatCurrency(controller.totalAmount),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -289,291 +415,140 @@ class PaymentPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
-                  // Scale section
-                  Container(
-                    height: 80,
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      border: const Border(
-                        top: BorderSide(color: Colors.grey, width: 1),
-                      ),
-                    ),
-                    child: Row(
-                        children: [
-                        // Weight display
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            '0,000 kg',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(width: 20),
-                        
-                        // Scale specifications
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Row(
-                                children: [
-                                  const Text('d = 0,005 kg', style: TextStyle(fontSize: 10)),
-                                  const SizedBox(width: 10),
-                                  const Text('e = 0,005 kg', style: TextStyle(fontSize: 10)),
-                                  const SizedBox(width: 10),
-                                  const Text('Max = 15 kg', style: TextStyle(fontSize: 10)),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  const Text('Min = 0,1 kg', style: TextStyle(fontSize: 10)),
-                                  const SizedBox(width: 10),
-                                  const Text('Nmax = 3000d', style: TextStyle(fontSize: 10)),
-                                  const SizedBox(width: 10),
-                                  const Text('Class III', style: TextStyle(fontSize: 10)),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  const Text('+10°C to +40°C', style: TextStyle(fontSize: 10)),
-                                  const SizedBox(width: 10),
-                                  const Text('CC: 03-104', style: TextStyle(fontSize: 10)),
-                                ],
-                          ),
-                        ],
-                      ),
-                        ),
-                        
-                        // Version button
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[400],
-                            foregroundColor: Colors.black,
-                            minimumSize: const Size(60, 30),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
-                          child: Text(
-                            langController.version,
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
-          
-          // Right Side - Payment Options and Buttons
-          Expanded(
-            flex: 2,
-            child: Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
+          // Bottom buttons section (10% of screen)
+          Container(
+            height: MediaQuery.of(context).size.height * 0.1,
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              border: const Border(
+                top: BorderSide(color: Colors.grey, width: 1),
+              ),
+            ),
+            child: Row(
               children: [
-                  // Selection prompt
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.3),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Obx(() => Text(
-                          langController.makeSelection,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        )),
-                        const SizedBox(height: 15),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 40,
-                          color: Colors.green[600],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Payment method buttons grid
-                  Expanded(
-                    child: Column(
-                      children: [
-                        // Top row buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 100,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    controller.processPayment('cash');
-                                  },
-                                  icon: const Icon(Icons.money, size: 28),
-                                  label: Obx(() => Text(
-                                    langController.cash,
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  )),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: SizedBox(
-                                height: 100,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    controller.processPayment('card');
-                                  },
-                                  icon: const Icon(Icons.credit_card, size: 28),
-                                  label: Obx(() => Text(
-                                    langController.credit,
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  )),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                const SizedBox(height: 10),
-                        
-                        // Second row buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 100,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    controller.processPayment('change');
-                                  },
-                                  icon: const Icon(Icons.monetization_on, size: 28),
-                                  label: Obx(() => Text(
-                                    langController.paymentWithChange,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                  )),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: SizedBox(
-                                height: 100,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    controller.processPayment('staff_card');
-                                  },
-                                  icon: const Icon(Icons.badge, size: 28),
-                                  label: Obx(() => Text(
-                                    langController.paymentWithStaffCard,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                  )),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Bottom action buttons
-                  Row(
+                // Left side payment buttons
+                Expanded(
+                  child: Row(
                     children: [
+                      // Cash Button
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => controller.navigateToItemScan(),
-                          icon: const Icon(Icons.arrow_back),
-                          label: Obx(() => Text(langController.returnScanMore)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[600],
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                          ),
+                        child: SizedBox(
+                          height: 60,
+                          child: Obx(() {
+                            final isProcessing = controller.isProcessingPayment.value;
+                            
+                            return ElevatedButton.icon(
+                              onPressed: isProcessing ? null : () => _handleCashPayment(controller),
+                              icon: isProcessing 
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(Icons.money, size: 20),
+                              label: Text(
+                                langController.cash,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isProcessing 
+                                    ? Colors.grey 
+                                    : const Color(0xFFE31E24), // Almaya red
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            );
+                          }),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
+                      // Credit Card Button
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Help functionality
-                          },
-                          icon: const Icon(Icons.help),
-                          label: Obx(() => Text(langController.requestHelp)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
+                        child: SizedBox(
+                          height: 60,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              controller.processPayment('card');
+                            },
+                            icon: const Icon(Icons.credit_card, size: 20),
+                            label: Obx(() => Text(
+                              langController.credit,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            )),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE31E24), // Almaya red
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                // Right side buttons
+                Row(
+                  children: [
+                    // Return Button
+                    SizedBox(
+                      width: 120,
+                      height: 60,
+                      child: ElevatedButton.icon(
+                        onPressed: () => controller.navigateToItemScan(),
+                        icon: const Icon(Icons.arrow_back, size: 20),
+                        label: Obx(() => Text(
+                          langController.returnScanMore,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        )),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[600],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Help Button
+                    SizedBox(
+                      width: 120,
+                      height: 60,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Help functionality
+                        },
+                        icon: const Icon(Icons.help, size: 20),
+                        label: Obx(() => Text(
+                          langController.requestHelp,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        )),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

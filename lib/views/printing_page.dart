@@ -16,6 +16,7 @@ class _PrintingPageState extends State<PrintingPage>
   late Animation<double> _rotationAnimation;
   int _countdown = 5;
   bool _printingCompleted = false;
+  bool _waitingForPosSubState = false;
 
   @override
   void initState() {
@@ -29,22 +30,48 @@ class _PrintingPageState extends State<PrintingPage>
     );
     _animationController.repeat();
     
-    // Simulate printing completion after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _animationController.stop();
-        setState(() {
-          _printingCompleted = true;
-        });
-        _startCountdown();
-      }
-    });
+    // Start monitoring PosSubState for 1008
+    _startPosSubStateMonitoring();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _startPosSubStateMonitoring() {
+    // Simulate printing completion after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        _animationController.stop();
+        setState(() {
+          _printingCompleted = true;
+          _waitingForPosSubState = true;
+        });
+        _monitorPosSubState();
+      }
+    });
+  }
+
+  void _monitorPosSubState() {
+    final controller = Get.find<AppController>();
+    
+    // Check if PosSubState is 1008
+    if (controller.posSubState == '1008') {
+      // Clear items when PosSubState is 1008
+      controller.clearScannedItems();
+      // Navigate to start page when PosSubState is 1008
+      controller.navigateToStart();
+      return;
+    }
+    
+    // Continue monitoring every 500ms
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _monitorPosSubState();
+      }
+    });
   }
 
   void _startCountdown() {
@@ -129,38 +156,58 @@ class _PrintingPageState extends State<PrintingPage>
             // Status Text
             Text(
               _printingCompleted 
-                ? (langCtrl.isEnglish ? 'Thank you for shopping!' : 'Alışveriş için teşekkürler!')
+                ? (_waitingForPosSubState 
+                    ? (langCtrl.isEnglish ? 'Waiting for system response...' : 'Sistem yanıtı bekleniyor...')
+                    : (langCtrl.isEnglish ? 'Thank you for shopping!' : 'Alışveriş için teşekkürler!'))
                 : 'Printing Receipt',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: _printingCompleted ? Colors.green : Colors.blue,
+                color: _printingCompleted 
+                  ? (_waitingForPosSubState ? Colors.orange : Colors.green)
+                  : Colors.blue,
               ),
             ),
             const SizedBox(height: 20),
             
             // Countdown Timer or Waiting Text
             _printingCompleted 
-              ? Column(
-                  children: [
-                    Text(
-                      langCtrl.isEnglish ? 'Returning to start page in' : 'Başlangıç sayfasına dönülüyor',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '$_countdown',
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                )
+              ? (_waitingForPosSubState
+                  ? Column(
+                      children: [
+                        Text(
+                          langCtrl.isEnglish ? 'Waiting for PosSubState 1008...' : 'PosSubState 1008 bekleniyor...',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        Text(
+                          langCtrl.isEnglish ? 'Returning to start page in' : 'Başlangıç sayfasına dönülüyor',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          '$_countdown',
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ))
               : const Text(
                   'Please wait while we print your receipt...',
                   style: TextStyle(

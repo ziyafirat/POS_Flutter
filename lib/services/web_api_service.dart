@@ -15,7 +15,7 @@ class WebApiService extends GetxController {
   
   // API Configuration
   static const String _baseUrl = 'http://192.168.3.90:50000/AEFProcess/restaefprocess/aefrun/posService';
-  static const Duration _loopInterval = Duration(seconds: 3);
+  static const Duration _loopInterval = Duration(seconds: 1);
   
   // Observable properties
   final RxBool _isConnected = false.obs;
@@ -240,6 +240,10 @@ class WebApiService extends GetxController {
         _logger.i('Navigating to start page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.itemScan);
         break;
+     case '1008':
+        _logger.i('Navigating to start page (PosSubState: $posSubState)');
+        appController.navigateToScreen(AppScreen.start);
+        break;
       default:
         _logger.d('Unknown PosSubState: $posSubState');
         break;
@@ -263,6 +267,23 @@ class WebApiService extends GetxController {
     );
   }
   
+  /// Convert price from raw format (e.g., 1000) to decimal format (e.g., 10.00)
+  String _convertPrice(String rawPrice) {
+    try {
+      // Parse the raw price as integer
+      final priceValue = int.tryParse(rawPrice) ?? 0;
+      
+      // Divide by 100 and format with 2 decimal places
+      final convertedPrice = priceValue / 100.0;
+      
+      // Format with 2 decimal places
+      return convertedPrice.toStringAsFixed(2);
+    } catch (e) {
+      _logger.w('Error converting price "$rawPrice": $e');
+      return '0.00';
+    }
+  }
+
   /// Process ItemLine and add to scanned items
   void _processItemLine(String itemLine) {
     try {
@@ -287,11 +308,14 @@ class WebApiService extends GetxController {
             final engName = parts[1];
             final araName = parts[2];
             final uom = parts[3];
-            final price = parts[4];
+            final rawPrice = parts[4];
             final vr = parts[5];
             final qty = parts[6];
             
-            _logger.d('Parsed - Barcode: $barcode, EngName: $engName, AraName: $araName, UOM: $uom, Price: $price, VR: $vr, Qty: $qty');
+            // Convert price: divide by 100 and format with 2 decimal places
+            final price = _convertPrice(rawPrice);
+            
+            _logger.d('Parsed - Barcode: $barcode, EngName: $engName, AraName: $araName, UOM: $uom, RawPrice: $rawPrice, ConvertedPrice: $price, VR: $vr, Qty: $qty');
             
             // Format for display: Eng Name (Ara Name) - UOM - Price - Qty
             final displayName = araName.isNotEmpty ? '$engName ($araName)' : engName;

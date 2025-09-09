@@ -27,6 +27,7 @@ class AppController extends GetxController {
   final RxList<String> _scannedItems = <String>[].obs;
   final RxDouble _totalAmount = 0.0.obs;
   final RxString _terminalId = '500'.obs;
+  final RxBool _isProcessingPayment = false.obs;
 
   // Getters
   Rx<AppState> get appState => _appState;
@@ -35,6 +36,7 @@ class AppController extends GetxController {
   double get totalAmount => _totalAmount.value;
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
   String? get terminalId => _terminalId.value;
+  RxBool get isProcessingPayment => _isProcessingPayment;
 
   // Stream subscriptions
   StreamSubscription<AlertMessage>? _alertSubscription;
@@ -235,8 +237,7 @@ class AppController extends GetxController {
       // Navigate to printing screen
       navigateToPrinting();
       
-      // Clear items after successful payment
-      clearScannedItems();
+      // Note: Items will be cleared when PosSubState becomes 1008 in printing screen
       
     } catch (e) {
       _logger.e('Payment processing failed: $e');
@@ -395,5 +396,11 @@ class AppController extends GetxController {
   void updatePosSubState(String state) {
     _posSubState.value = state;
     _logger.d('Updated PosSubState: $state');
+  }
+  
+  // Payment processing state management
+  void setProcessingPayment(bool isProcessing) {
+    _isProcessingPayment.value = isProcessing;
+    _logger.d('Set processing payment: $isProcessing');
   }
 }

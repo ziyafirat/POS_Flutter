@@ -14,339 +14,378 @@ class StartPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Container(
+      body: Column(
+        children: [
+          // Status Bar (5% of screen)
+          Container(
+            height: MediaQuery.of(context).size.height * 0.05,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Color(0xFFE31E24), Color(0xFFC41E3A)], // Almaya red colors
+              ),
+            ),
+            child: Row(
+              children: [
+                // Almaya Logo
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'A',
+                            style: TextStyle(
+                              color: Color(0xFFE31E24),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'almaya',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'supermarket',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Display text and POS button - Always visible
+                Flexible(
+                  child: Obx(() => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // PosSubState display
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              controller.posSubState.isNotEmpty ? controller.posSubState : 'N/A',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Display text
+                          Flexible(
+                            child: Text(
+                              controller.displayText.isNotEmpty ? controller.displayText : 'System Ready',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Small POS Cashier button
+                          SizedBox(
+                            height: 24,
+                            child: ElevatedButton(
+                              onPressed: () => controller.navigateToPosCashier(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFFE31E24),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              child: const Text(
+                                'POS',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )),
+                ),
+                const SizedBox(width: 16),
+              ],
+            ),
+          ),
+          // Main Content Area (60% of screen)
+          Expanded(
+            flex: 6,
+            child: Container(
         width: double.infinity,
-        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue, Colors.blueAccent],
+                  colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Display text from API
-            Obx(() => (controller.displayText.isNotEmpty || controller.posSubState.isNotEmpty)
-                ? Container(
-                    margin: const EdgeInsets.all(20),
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.blue, width: 2),
-                    ),
-                    child: Row(
-                      children: [
-                        if (controller.posSubState.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[100],
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              controller.posSubState,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ),
-                        if (controller.posSubState.isNotEmpty && controller.displayText.isNotEmpty)
-                          const SizedBox(width: 10),
-                        if (controller.displayText.isNotEmpty)
-                          Expanded(
-                            child: Text(
-                              controller.displayText,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        const SizedBox(width: 10),
-                        // Small POS Cashier button
-                        SizedBox(
-                          height: 24,
-                          child: ElevatedButton(
-                            onPressed: () => controller.navigateToPosCashier(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              minimumSize: Size.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            child: const Text(
-                              'POS',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : const SizedBox.shrink()),
-            // Logo/Image placeholder
+                  // Main promotional image area
             Container(
-              width: 200,
-              height: 200,
+                    margin: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFFE31E24), Color(0xFFC41E3A)],
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background pattern
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withOpacity(0.1),
+                                      Colors.white.withOpacity(0.05),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Content
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Shopping cart icon
+                                  Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(60),
               ),
               child: const Icon(
                 Icons.shopping_cart,
-                size: 100,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 40),
-            
-            // App Title
-            Obx(() => Text(
-              langController.welcomeTitle,
-              style: const TextStyle(
-                fontSize: 32,
+                                      size: 60,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  // Welcome text
+                                  Obx(() => Text(
+                                    langController.welcomeTitle,
+                                    style: const TextStyle(
+                                      fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
-            )),
+                                    textAlign: TextAlign.center,
+                                  )),
             const SizedBox(height: 10),
-            
-            Obx(() => Text(
-              langController.welcomeSubtitle,
-              style: const TextStyle(
-                fontSize: 18,
+                                  Obx(() => Text(
+                                    langController.welcomeSubtitle,
+                                    style: const TextStyle(
+                                      fontSize: 16,
                 color: Colors.white70,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  )),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            )),
-            const SizedBox(height: 60),
-            
-            // Start Button
+            ),
+          ),
+          // Bottom section with buttons (35% of screen)
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Start Shopping Button (Primary Action)
             SizedBox(
-              width: 280,
-              height: 50,
+                    width: double.infinity,
+                    height: 60,
               child: ElevatedButton(
                 onPressed: () {
                   controller.clearScannedItems(); // Clear any previous items
                   controller.navigateToItemScan();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFFE31E24), // Almaya red
+                        foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 8,
                   shadowColor: Colors.black26,
                 ),
-                child: Row(
+                      child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.shopping_cart, size: 24),
-                    const SizedBox(width: 12),
-                    Obx(() => Text(
-                      langController.startShopping,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                          const Icon(Icons.shopping_cart, size: 28),
+                          const SizedBox(width: 12),
+                          Obx(() => Text(
+                            langController.startShopping,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )),
+                        ],
                       ),
-                    )),
-                  ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Secondary buttons row
+                  Row(
+                    children: [
+                      // Language Toggle Button
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              langController.toggleLanguage();
+                            },
+                            icon: const Icon(Icons.language, size: 20),
+                            label: Obx(() => Text(
+                              langController.languageButtonText,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[600],
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 4,
+                            ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            
-            // Assistant Page Button
-            SizedBox(
-              width: 280,
+                      const SizedBox(width: 12),
+                      // Assistant Button
+                      Expanded(
+                        child: SizedBox(
               height: 50,
-              child: ElevatedButton(
+                          child: ElevatedButton.icon(
                 onPressed: () {
                   controller.navigateToAssistant();
                 },
+                            icon: const Icon(Icons.settings, size: 20),
+                            label: Obx(() => Text(
+                              langController.assistant,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                              backgroundColor: Colors.grey[600],
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  elevation: 8,
-                  shadowColor: Colors.black26,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.settings, size: 24),
-                    const SizedBox(width: 12),
-                    Obx(() => Text(
-                      langController.assistant,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                              elevation: 4,
+                            ),
+                          ),
+                        ),
                       ),
-                    )),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            
-            // Language Toggle Button
-            SizedBox(
-              width: 280,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  langController.toggleLanguage();
-                },
-                icon: const Icon(Icons.language, size: 24),
-                label: Obx(() => Text(
-                  langController.languageButtonText,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    ],
                   ),
-                )),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 8,
-                  shadowColor: Colors.black26,
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            
-            // gRPC Test Button
-            SizedBox(
-              width: 280,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  controller.testGrpcConnection();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 8,
-                  shadowColor: Colors.black26,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.network_check, size: 24),
-                    SizedBox(width: 12),
-                    Text(
-                      'Test gRPC Connection',
+                  const SizedBox(height: 12),
+                  
+                  // POS Cashier Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        controller.navigateToPosCashier();
+                      },
+                      icon: const Icon(Icons.point_of_sale, size: 20),
+                      label: const Text(
+                        'POS Cashier',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            
-            // POS Cashier Button
-            SizedBox(
-              width: 280,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  controller.navigateToPosCashier();
-                },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                        backgroundColor: Colors.grey[600],
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  elevation: 8,
-                  shadowColor: Colors.black26,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.point_of_sale, size: 24),
-                    SizedBox(width: 12),
-                    Text(
-                      'POS Cashier',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        elevation: 4,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Connection Status
-            Obx(() => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    controller.appState.value.grpcStatus == ConnectionStatus.connected
-                        ? Icons.wifi
-                        : Icons.wifi_off,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'gRPC: ${controller.appState.value.grpcStatus.name}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    controller.appState.value.mqttStatus == ConnectionStatus.connected
-                        ? Icons.cloud_done
-                        : Icons.cloud_off,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'MQTT: ${controller.appState.value.mqttStatus.name}',
-                    style: const TextStyle(color: Colors.white),
                   ),
                 ],
               ),
-            )),
+            ),
+          ),
           ],
-        ),
       ),
     );
   }
