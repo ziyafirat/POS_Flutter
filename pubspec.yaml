@@ -36,8 +36,8 @@ dependencies:
   # printing: ^5.11.1
   # pdf: ^3.10.4
   
-  # QR Code scanning
-  qr_code_scanner: ^1.0.1
+  # QR Code scanning (temporarily disabled for Android build)
+  # mobile_scanner: ^5.0.0
   
   # Local storage
   shared_preferences: ^2.2.2
