@@ -13,6 +13,9 @@ class WebApiService extends GetxController {
   Timer? _apiTimer;
   bool _isRunning = false;
   
+  // Flag to track if 1010 state has been received (to skip 1002 after 1010)
+  bool _hasReceived1010 = false;
+  
   // API Configuration
   static const String _baseUrl = 'http://192.168.3.90:50000/AEFProcess/restaefprocess/aefrun/posService';
   static const Duration _loopInterval = Duration(seconds: 1);
@@ -229,10 +232,16 @@ class WebApiService extends GetxController {
     
     switch (posSubState) {
       case '1002':
+        // Skip 1002 if 1010 has already been received
+        if (_hasReceived1010) {
+          _logger.i('Skipping posSubState 1002 - 1010 has already been received');
+          return;
+        }
         _logger.i('Navigating to item scan page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.itemScan);
         break;
       case '1010':
+        _hasReceived1010 = true; // Set flag when 1010 is received
         _logger.i('Navigating to payment page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.payment);
         break;
@@ -241,6 +250,7 @@ class WebApiService extends GetxController {
         appController.navigateToScreen(AppScreen.itemScan);
         break;
      case '1008':
+        _hasReceived1010 = false; // Reset flag when 1008 is received
         _logger.i('Navigating to start page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.start);
         break;
