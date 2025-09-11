@@ -1,7 +1,22 @@
 allprojects {
     repositories {
-        google()
-        mavenCentral()
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral {
+            content {
+                excludeGroupByRegex("com\\.android.*")
+                excludeGroupByRegex("com\\.google.*")
+                excludeGroupByRegex("androidx.*")
+            }
+        }
+        // Alternative repositories for better reliability
+        maven { url = uri("https://jcenter.bintray.com/") }
+        maven { url = uri("https://repo1.maven.org/maven2/") }
     }
 }
 
