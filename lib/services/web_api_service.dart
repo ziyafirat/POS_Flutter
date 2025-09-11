@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
 import '../models/app_state.dart';
+import 'usb_printer_service.dart';
 
 class WebApiService extends GetxController {
   static WebApiService get to => Get.find();
@@ -251,7 +252,8 @@ class WebApiService extends GetxController {
         break;
      case '1008':
         _hasReceived1010 = false; // Reset flag when 1008 is received
-        _logger.i('Navigating to start page (PosSubState: $posSubState)');
+        appController.clearScannedItems(); // Clear all items from the list
+        _logger.i('Navigating to start page (PosSubState: $posSubState) - cleared all items');
         appController.navigateToScreen(AppScreen.start);
         break;
       default:
@@ -352,11 +354,43 @@ class WebApiService extends GetxController {
       
       _logger.i('Decoded receipt for printing:\n$receiptText');
       
+      // Check if receipt contains "MPOS TXN END" text
+      if (receiptText.contains('MPOS TXN END')) {
+        _logger.i('MPOS TXN END detected in receipt - navigating to printing page and printing receipt');
+        final appController = Get.find<AppController>();
+        appController.navigateToScreen(AppScreen.printing);
+        
+        // Automatically print the receipt to USB Epson printer
+        _printReceiptToUsbPrinter(receiptText);
+      }
+      
       // Store receipt for printing (you can implement printing logic here)
       // For now, just log it
       
     } catch (e) {
       _logger.e('Error processing Receipt: $e');
+    }
+  }
+  
+  /// Print receipt to USB Epson printer
+  Future<void> _printReceiptToUsbPrinter(String receiptText) async {
+    try {
+      _logger.i('Sending receipt to USB Epson printer...');
+      
+      // Get the USB printer service
+      final printerService = Get.find<UsbPrinterService>();
+      
+      // Print the receipt
+      final success = await printerService.printReceipt(receiptText);
+      
+      if (success) {
+        _logger.i('Receipt printed successfully to USB Epson printer');
+      } else {
+        _logger.e('Failed to print receipt to USB Epson printer');
+      }
+      
+    } catch (e) {
+      _logger.e('Error printing receipt to USB printer: $e');
     }
   }
   

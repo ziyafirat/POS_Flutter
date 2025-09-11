@@ -11,6 +11,7 @@ import 'views/alert_page.dart';
 import 'views/assistant_page.dart';
 import 'views/pos_cashier_page.dart';
 import 'models/app_state.dart';
+import 'services/usb_printer_service.dart';
 
 void main() {
   runApp(const SelfCheckoutApp());
@@ -70,6 +71,7 @@ class AppBinding extends Bindings {
   @override
   void dependencies() {
     Get.put(AppController());
+    Get.put(UsbPrinterService());
     // NavigationController removed - navigation is handled by MainNavigationWrapper
   }
 }
