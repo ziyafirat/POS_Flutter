@@ -25,12 +25,14 @@ class AppController extends GetxController {
   final Rx<AlertMessage?> _currentAlert = Rx<AlertMessage?>(null);
   final RxList<String> _scannedItems = <String>[].obs;
   final RxDouble _totalAmount = 0.0.obs;
+  final RxInt _bagCount = 0.obs;
 
   // Getters
   Rx<AppState> get appState => _appState;
   AlertMessage? get currentAlert => _currentAlert.value;
   List<String> get scannedItems => _scannedItems;
   double get totalAmount => _totalAmount.value;
+  int get bagCount => _bagCount.value;
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
 
   // Stream subscriptions
@@ -199,6 +201,27 @@ class AppController extends GetxController {
       _totalAmount.value -= 10.0; // Mock price
       _logger.i('Removed item at index $index, Total: ${_totalAmount.value}');
     }
+  }
+
+  // Bag management
+  void addBag() {
+    _bagCount.value++;
+    _totalAmount.value += 0.25; // Mock bag price
+    _logger.i('Added bag, Count: ${_bagCount.value}, Total: ${_totalAmount.value}');
+  }
+
+  void removeBag() {
+    if (_bagCount.value > 0) {
+      _bagCount.value--;
+      _totalAmount.value -= 0.25; // Mock bag price
+      _logger.i('Removed bag, Count: ${_bagCount.value}, Total: ${_totalAmount.value}');
+    }
+  }
+
+  void clearBags() {
+    _totalAmount.value -= (_bagCount.value * 0.25); // Remove bag costs
+    _bagCount.value = 0;
+    _logger.i('Cleared bags');
   }
 
   // Alert management

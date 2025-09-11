@@ -2,9 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
+import '../widgets/bag_popup.dart';
 
 class ItemScanPage extends StatelessWidget {
   const ItemScanPage({super.key});
+
+  void _showBagPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        return const BagPopup();
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -485,7 +496,7 @@ class ItemScanPage extends StatelessWidget {
                       
                       return ElevatedButton(
                         onPressed: isButtonEnabled
-                            ? () => controller.navigateToPayment()
+                            ? () => _showBagPopup(context)
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,

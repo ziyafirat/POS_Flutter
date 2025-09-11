@@ -82,4 +82,21 @@ class LanguageController extends GetxController {
   String get returningToStart => isEnglish 
       ? 'Returning to start page in'
       : 'Başlangıç sayfasına dönülüyor';
+  
+  // Bag popup texts
+  String get addPlasticBag => isEnglish 
+      ? 'Add Plastic Bag'
+      : 'Plastik Poşet Ekle';
+  
+  String get bagCount => isEnglish 
+      ? 'Bag Count:'
+      : 'Poşet Sayısı:';
+  
+  String get bagPrice => isEnglish 
+      ? '0.25 TL per bag'
+      : 'Poşet başına 0.25 TL';
+  
+  String get finishShopping => isEnglish 
+      ? 'Finish Shopping'
+      : 'Alışverişi Bitir';
 }
