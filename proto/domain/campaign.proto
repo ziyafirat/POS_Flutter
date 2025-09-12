@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package domain;
+
+import "common/money.proto";
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "CampaignProtoContainer";
+
+/**
+ * Represents a promotional campaign or discount applied to a line item.
+ */
+message CampaignProto {
+  // The unique identifier for the campaign.
+  string campaign_id = 1;
+
+  // The human-readable name of the campaign, suitable for display.
+  string campaign_name = 2;
+
+  // The monetary value of the discount applied by this campaign.
+  common.MoneyProto discount_amount = 3;
+}

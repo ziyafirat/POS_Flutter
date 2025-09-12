@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package domain;
+
+import "domain/payment.proto";
+import "domain/interaction_message.proto";
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "MakePaymentInteractiveProtoContainer";
+
+//==============================================================================
+// MESSAGES SENT FROM CLIENT TO SERVER
+//==============================================================================
+
+/**
+ * A wrapper for any message sent from the client to the server during an
+ * interactive payment flow.
+ */
+message ClientPaymentActionProto {
+  // A client-generated unique identifier for this entire payment attempt.
+  // This MUST be included in every message from the client for this flow.
+  string payment_attempt_id = 1;
+
+  /**
+   * The specific action being sent.
+   */
+  oneof action_type {
+    // The VERY FIRST message from the client to initiate a new payment flow.
+    StartPaymentProto start_payment = 2;
+    // Any subsequent message from the client, containing the result of a UI prompt.
+    PromptResultProto prompt_result = 3;
+  }
+}
+
+/**
+ * The initial message from the client to begin an interactive payment.
+ */
+message StartPaymentProto {
+  string pos_tx_id = 1;
+  domain.PaymentProto payment_details = 2;
+}
+
+//==============================================================================
+// MESSAGES SENT FROM SERVER TO CLIENT
+//==============================================================================
+
+/**
+ * A wrapper for any message sent from the server to the client during an
+ * interactive payment flow.
+ */
+message ServerPaymentActionProto {
+  // The unique identifier for this payment attempt, echoing the client's original ID.
+  string payment_attempt_id = 1;
+
+  /**
+   * The specific action the server is commanding.
+   */
+  oneof action_type {
+    // A command telling the client to render a specific UI prompt.
+    // See `domain/interaction_message.proto`.
+    PromptProto prompt = 2;
+    // The FINAL message, indicating the entire payment flow has concluded.
+    PaymentCompletionStatusProto completion_status = 3;
+  }
+}
+
+/**
+ * The final status of the entire payment flow. This is a terminal message.
+ */
+message PaymentCompletionStatusProto {
+  // `true` if the payment was successful, `false` otherwise.
+  bool success = 1;
+  // The final, user-facing message to display on the client UI.
+  string final_message = 2;
+}

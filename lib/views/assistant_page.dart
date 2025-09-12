@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../models/app_state.dart';
+import '../test/mqtt_test.dart';
+import '../test/mqtt_test_widget.dart';
 
 class AssistantPage extends StatelessWidget {
   const AssistantPage({super.key});
@@ -87,10 +89,10 @@ class AssistantPage extends StatelessWidget {
             
             Expanded(
               child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.1,
+                crossAxisCount: 6,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.8,
                 children: [
                   _buildTestButton(
                     'Test gRPC Connection',
@@ -206,6 +208,42 @@ class AssistantPage extends StatelessWidget {
                       );
                     },
                   ),
+                  _buildTestButton(
+                    'MQTT Test Sequence',
+                    Icons.science,
+                    Colors.indigo,
+                    () async {
+                      // Run MQTT test sequence
+                      Get.snackbar(
+                        'MQTT Test',
+                        'Starting MQTT test sequence...',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.blue,
+                        colorText: Colors.white,
+                      );
+                      
+                      try {
+                        final mqttTest = MqttTest();
+                        await mqttTest.runTestSequence();
+                        
+                        Get.snackbar(
+                          'MQTT Test Complete',
+                          'MQTT test sequence completed successfully',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'MQTT Test Error',
+                          'MQTT test failed: $e',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -241,6 +279,19 @@ class AssistantPage extends StatelessWidget {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: "mqtt_test",
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MqttTestWidget(),
+            ),
+          );
+        },
+        backgroundColor: Colors.blue,
+        child: const Icon(Icons.wifi, color: Colors.white),
+      ),
     );
   }
 
@@ -251,28 +302,28 @@ class AssistantPage extends StatelessWidget {
     VoidCallback onPressed,
   ) {
     return SizedBox(
-      height: 50,
+      height: 40,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
-          elevation: 8,
+          elevation: 4,
           shadowColor: Colors.black26,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20),
-            const SizedBox(height: 4),
+            Icon(icon, size: 16),
+            const SizedBox(height: 2),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 8,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,

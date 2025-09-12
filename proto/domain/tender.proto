@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package domain;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "TenderProtoContainer";
+
+/**
+ * Represents a method of payment (e.g., cash, credit card).
+ */
+message TenderProto {
+  // The unique identifier for this tender type.
+  string tender_id = 1;
+  // A human-readable name for the tender, suitable for UI display (e.g., "Visa Credit").
+  string tender_description = 2;
+  // Any additional, unstructured information about the tender.
+  string extra_info = 3;
+
+  /**
+   * Defines the behavior of the tender.
+   */
+  oneof tender_type {
+    // Details for a standard, non-interactive tender.
+    StaticTenderDetails static_details = 10;
+    // Details for a tender that requires a multi-step, interactive flow.
+    InteractiveTenderDetails interactive_details = 11;
+  }
+}
+
+/**
+ * Defines the properties of a simple, single-step tender.
+ */
+message StaticTenderDetails {
+  bool is_credit_card = 1;
+  bool require_otp = 2;
+  bool require_pin = 3;
+  bool allow_partial_payment = 4;
+}
+
+/**
+ * Placeholder for details specific to interactive (multi-step) tenders.
+ */
+message InteractiveTenderDetails {}
+
+/**
+ * A response message containing a list of available tenders.
+ */
+message GetTendersResponseProto {
+  // A list of all tenders available for the current transaction.
+  repeated domain.TenderProto tenders = 1;
+}

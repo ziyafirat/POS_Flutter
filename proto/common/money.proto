@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package common;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.common";
+option java_multiple_files = true;
+option java_outer_classname = "MoneyProtoContainer";
+
+/**
+ * Represents a monetary value with a specific currency.
+ * This structure is used throughout the API to handle all financial amounts.
+ */
+message MoneyProto {
+  // The total monetary amount expressed in the currency's smallest unit
+  // (e.g., kuruş for TR, cents for USD, yen for JPY).
+  int64 amount_in_lowest_denomination = 1;
+
+  // The ISO 4217 currency code (e.g., "USD", "EUR", "TRY").
+  string currency_code = 2;
+}

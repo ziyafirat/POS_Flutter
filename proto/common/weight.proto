@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package common;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.common";
+option java_multiple_files = true;
+option java_outer_classname = "WeightProtoContainer";
+
+/**
+ * Represents a weight measurement with a specific unit.
+ */
+message WeightProto {
+  // The measured weight value, typically in the smallest common unit like grams.
+  int32 weight_value = 1;
+
+  // The unit of measurement (e.g., "GR", "KG", "LB").
+  // Using a string provides flexibility for different unit systems.
+  string weight_unit = 2;
+
+  // An optional tolerance value used for weight verification,
+  // typically expressed in the same unit as `weight_value`.
+  int32 tolerance = 3;
+}

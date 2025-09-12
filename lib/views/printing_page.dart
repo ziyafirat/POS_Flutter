@@ -203,7 +203,7 @@ class _PrintingPageState extends State<PrintingPage>
                   const SizedBox(height: 10),
                   Obx(() => Text('Items: ${controller.scannedItems.length}')),
                   const SizedBox(height: 5),
-                  Obx(() => Text('Total: \$${controller.totalAmount.toStringAsFixed(2)}')),
+                  Obx(() => Text('Total: TL ${controller.totalAmount.toStringAsFixed(2)}')),
                   const SizedBox(height: 10),
                   const Divider(),
                   const SizedBox(height: 10),

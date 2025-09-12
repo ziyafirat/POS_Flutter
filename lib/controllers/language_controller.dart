@@ -24,7 +24,7 @@ class LanguageController extends GetxController {
   String get productSearch => isEnglish ? 'Search Product' : 'Ürün Ara';
   String get carrefourCard => isEnglish ? 'CarrefourSA Card' : 'CarrefourSA Kart';
   String get enterBarcode => isEnglish ? 'Enter Barcode' : 'Barkod\'u Tuşlayın';
-  String get callHelp => isEnglish ? 'Call for Help' : 'Yardım Çağır';
+  String get callHelp => isEnglish ? 'Request Help' : 'Yardım Çağır';
   String get finishAndPay => isEnglish ? 'Finish & Pay' : 'Bitir ve Öde';
   String get addTestItem => isEnglish ? 'Add Test Item' : 'Test Item Ekle';
   
@@ -35,7 +35,7 @@ class LanguageController extends GetxController {
   String get paymentWithChange => isEnglish ? 'Payment with Change' : 'Bozuk Para Üstü İle Ödeme';
   String get paymentWithStaffCard => isEnglish ? 'Payment with Staff Card' : 'Personel Kart İle Ödeme';
   String get returnScanMore => isEnglish ? 'RETURN\nScan More Items' : 'GERİ\nDaha Fazla Ürün Tara';
-  String get requestHelp => isEnglish ? 'Request Help' : 'Yardım İste';
+  String get requestHelp => isEnglish ? 'Request Help' : 'Yardım Çağır';
   
   // Item list texts
   String get noItemsScanned => isEnglish ? 'No items scanned yet' : 'Henüz ürün taranmadı';
@@ -99,4 +99,15 @@ class LanguageController extends GetxController {
   String get finishShopping => isEnglish 
       ? 'Finish Shopping'
       : 'Alışverişi Bitir';
+  
+  // Popup texts
+  String get cancel => isEnglish ? 'Cancel' : 'İptal';
+  String get enter => isEnglish ? 'Enter' : 'Gir';
+  String get clear => isEnglish ? 'Clear' : 'Temizle';
+  String get back => isEnglish ? 'Back' : 'Geri';
+  String get space => isEnglish ? 'Space' : 'Boşluk';
+  String get backToScanning => isEnglish ? 'Back to Scanning' : 'Taramaya Dön';
+  String get assistance => isEnglish ? 'Assistance' : 'Yardım';
+  String get previousPage => isEnglish ? 'Previous Page' : 'Önceki Sayfa';
+  String get nextPage => isEnglish ? 'Next Page' : 'Sonraki Sayfa';
 }

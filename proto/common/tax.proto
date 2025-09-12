@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package common;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.common";
+option java_multiple_files = true;
+option java_outer_classname = "TaxProtoContainer";
+
+import "common/money.proto";
+
+/**
+ * Represents the tax information for an item or transaction.
+ */
+message TaxProto {
+  // The tax rate expressed as a factor (e.g., 8 for 8%, 18 for 18%).
+  int32 taxFactor = 1;
+
+  // The calculated tax amount for the associated item or total.
+  MoneyProto taxAmount = 2;
+}

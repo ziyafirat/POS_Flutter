@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package domain;
+
+import "google/protobuf/empty.proto";
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "QuickLookupProtoContainer";
+
+/**
+ * Represents a single item in a Quick Lookup (PLU) list.
+ */
+message QuickLookupItemProto {
+  string barcode = 1;
+  string name = 2;
+  optional string description = 3;
+  // An optional image of the item, encoded as raw bytes (e.g., JPEG or PNG).
+  optional bytes raw_image = 4;
+}
+
+/**
+ * A list of quick lookup items belonging to a single category.
+ */
+message QuickLookupItemListProto {
+  repeated QuickLookupItemProto items = 1;
+}
+
+/**
+ * The response containing all quick lookup items, organized by category.
+ */
+message GetQuickLookupItemsResponseProto {
+  // A map where the key is the category name (e.g., "Fruits", "Bakery")
+  // and the value is the list of items in that category.
+  map<string, QuickLookupItemListProto> quick_lookup_categories = 1;
+}

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package domain;
+
+import "domain/payment.proto";
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "MakePaymentProtoContainer";
+
+/**
+ * A request to make a simple, non-interactive payment.
+ */
+message MakePaymentRequestProto {
+  // The ID of the transaction to which the payment should be applied.
+  string pos_tx_id = 1;
+  // The payment details.
+  domain.PaymentProto payment = 2;
+}

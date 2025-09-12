@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package domain;
+
+import "common/money.proto";
+import "common/weight.proto";
+import "domain/campaign.proto";
+import "domain/item.proto";
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "LineItemProtoContainer";
+
+/**
+ * Details for a line item sold by quantity.
+ */
+message QuantityBasedDetailsProto {
+  // The number of units for this line item.
+  int32 quantity = 1;
+}
+
+/**
+ * Details for a line item sold by weight.
+ */
+message WeightBasedDetailsProto {
+  // The measured weight for this line item.
+  common.WeightProto weight = 1;
+}
+
+/**
+ * Represents a single line item within a transaction basket.
+ */
+message LineItemResponseProto {
+  // A unique ID for this specific line item instance within the transaction.
+  string pos_line_item_id = 1;
+  // The barcode of the item associated with this line.
+  string barcode = 2;
+  // The full catalog details of the item. See `domain/item.proto`.
+  ItemResponseProto item = 3;
+  // The price per unit after any applicable item-level discounts.
+  common.MoneyProto effective_unit_price = 4;
+  // The total price for this line item (effective_unit_price * quantity/weight).
+  common.MoneyProto extended_price = 5;
+  // A list of all promotional campaigns applied to this line item.
+  repeated domain.CampaignProto applied_campaigns = 6;
+  // A flag indicating if this line item has been voided.
+  bool is_voided = 7;
+
+  /**
+   * Polymorphic block determining if the line item is quantity-based or weight-based.
+   */
+  oneof line_item_type {
+    QuantityBasedDetailsProto quantity_based = 11;
+    WeightBasedDetailsProto weight_based = 12;
+  }
+}
+
+/**
+ * Request to add a quantity-based item to the transaction.
+ */
+message AddItemByQuantityRequestProto {
+  string pos_tx_id = 1;
+  string barcode = 2;
+  int32 quantity = 3;
+}
+
+/**
+ * Request to add a weight-based item to the transaction.
+ */
+message AddItemByWeightRequestProto {
+  string pos_tx_id = 1;
+  string barcode = 2;
+  common.WeightProto weight = 3;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package domain;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "VoidItemProtoContainer";
+
+/**
+ * Request to void (remove) a specific line item from a transaction.
+ */
+message VoidItemRequestProto {
+  string pos_tx_id = 1;
+  // The unique ID of the line item instance to be voided.
+  string pos_line_item_id = 2;
+}

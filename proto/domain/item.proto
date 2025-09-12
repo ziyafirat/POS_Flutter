@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package domain;
+
+import "common/money.proto";
+import "common/weight.proto";
+import "common/tax.proto";
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "ItemProtoContainer";
+
+/**
+ * An enumeration of all possible item types, determining how the item is handled at the POS.
+ */
+enum ItemTypeProto {
+  ITEM_TYPE_UNSPECIFIED = 0; // Default, should not be used.
+  NORMAL = 1;                // A standard item with a fixed price.
+  QUANTITY_REQUIRED = 2;     // An item that requires the user to enter a quantity.
+  WEIGHT_REQUIRED = 3;       // An item that must be weighed on a scale.
+  WEIGHT_EMBEDDED = 4;       // A variable-weight item with weight encoded in the barcode.
+  PRICE_EMBEDDED = 5;        // A variable-price item with the price encoded in the barcode.
+}
+
+/**
+ * Details for a standard, non-variable item.
+ */
+message NormalItemDetailsProto {
+  // An optional, pre-defined weight used for security verification.
+  optional common.WeightProto defined_weight = 1;
+}
+
+/**
+ * Details for an item that requires a quantity to be entered.
+ */
+message QuantityRequiredItemDetailsProto {
+  optional int32 min_quantity = 1;
+  optional int32 max_quantity = 2;
+  optional common.WeightProto defined_weight = 3;
+}
+
+/**
+ * Details for an item with weight information encoded in its barcode.
+ */
+message WeightEmbeddedItemDetailsProto {
+  common.WeightProto embedded_weight = 1;
+}
+
+/**
+ * Details for an item with price information encoded in its barcode.
+ */
+message PriceEmbeddedItemDetailsProto {
+  common.MoneyProto embedded_price = 1;
+  common.WeightProto calculated_weight = 2;
+}
+
+/**
+ * Details for an item that must be weighed at the time of sale.
+ * This message is a placeholder as no extra data is needed.
+ */
+message WeightRequiredItemDetailsProto {}
+
+/**
+ * The complete representation of a catalog item.
+ */
+message ItemResponseProto  {
+  // The type of the item, which determines which `item_details` oneof is set.
+  ItemTypeProto type = 1;
+  // The item's primary identifier (e.g., UPC, EAN).
+  string barcode = 2;
+  // The primary, user-facing name of the item.
+  string name = 3;
+  // A more detailed description of the item.
+  string description = 4;
+  // The base price for a single unit of the item.
+  common.MoneyProto unit_price = 5;
+  // The tax information applicable to this item.
+  common.TaxProto tax = 6;
+  // A flag indicating if this item should be skipped during security weight checks.
+  bool pass_around_item = 7;
+  // A flag indicating if the sale of this item requires unlocking from its box and verification.
+  bool locked_item = 8;
+  // A flag indicating if the sale of this item requires age verification.
+  bool age_restricted_item = 9;
+
+  /**
+   * A polymorphic block containing details specific to the item's type.
+   */
+  oneof item_details {
+    NormalItemDetailsProto normal_item = 11;
+    QuantityRequiredItemDetailsProto quantity_required_item = 12;
+    WeightEmbeddedItemDetailsProto weight_embedded_item = 13;
+    PriceEmbeddedItemDetailsProto price_embedded_item = 14;
+    WeightRequiredItemDetailsProto weight_required_item = 15;
+  }
+}
+
+/**
+ * Request to retrieve item details using a barcode.
+ */
+message GetItemRequestProto {
+  // The ID of the transaction this request is part of.
+  string pos_tx_id = 1;
+  // The barcode of the item to look up.
+  string barcode = 2;
+}

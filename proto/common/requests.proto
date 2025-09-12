@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package common;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.common";
+option java_multiple_files = true;
+option java_outer_classname = "RequestsProtoContainer";
+
+/**
+ * A generic request message used for RPC calls that operate on an existing transaction.
+ */
+message TransactionRequestProto {
+  // The unique identifier for the point-of-sale transaction that this request targets.
+  string pos_tx_id = 1;
+}

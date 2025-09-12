@@ -26,6 +26,9 @@ class AppController extends GetxController {
   final RxList<String> _scannedItems = <String>[].obs;
   final RxDouble _totalAmount = 0.0.obs;
   final RxInt _bagCount = 0.obs;
+  final RxString _cardNumber = ''.obs;
+  final RxString _customerName = ''.obs;
+  final RxInt _loyaltyPoints = 0.obs;
 
   // Getters
   Rx<AppState> get appState => _appState;
@@ -33,6 +36,9 @@ class AppController extends GetxController {
   List<String> get scannedItems => _scannedItems;
   double get totalAmount => _totalAmount.value;
   int get bagCount => _bagCount.value;
+  String get cardNumber => _cardNumber.value;
+  String get customerName => _customerName.value;
+  int get loyaltyPoints => _loyaltyPoints.value;
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
 
   // Stream subscriptions
@@ -203,6 +209,27 @@ class AppController extends GetxController {
     }
   }
 
+  // Card management
+  void setCardInfo(String cardNumber) {
+    _cardNumber.value = cardNumber;
+    // Mock customer data based on card number
+    if (cardNumber.length >= 4) {
+      _customerName.value = 'Customer ${cardNumber.substring(0, 4)}';
+      _loyaltyPoints.value = int.tryParse(cardNumber.substring(0, 4)) ?? 0;
+    } else {
+      _customerName.value = 'Customer $cardNumber';
+      _loyaltyPoints.value = 0;
+    }
+    _logger.i('Card set: $cardNumber, Customer: ${_customerName.value}, Points: ${_loyaltyPoints.value}');
+  }
+
+  void clearCardInfo() {
+    _cardNumber.value = '';
+    _customerName.value = '';
+    _loyaltyPoints.value = 0;
+    _logger.i('Card info cleared');
+  }
+
   // Bag management
   void addBag() {
     _bagCount.value++;
@@ -267,33 +294,30 @@ class AppController extends GetxController {
 
   Future<void> runGrpcHappyTestScenario() async {
     _logger.i('🚀 Starting comprehensive gRPC happy test scenario...');
-    final results = await _grpcService.runHappyTestScenario();
-    
-    final passedTests = results.values.where((result) => result).length;
-    final totalTests = results.length;
+    final success = await _grpcService.runHappyTestScenario();
     
     // Log the results instead of showing snackbar to avoid overlay issues
-    if (passedTests == totalTests) {
-      _logger.i('🎉 All Tests Passed! gRPC happy test scenario completed successfully ($passedTests/$totalTests)');
+    if (success) {
+      _logger.i('🎉 Happy Test Passed! gRPC happy test scenario completed successfully');
     } else {
-      _logger.w('⚠️ Some Tests Failed: gRPC happy test scenario: $passedTests/$totalTests tests passed');
+      _logger.w('⚠️ Happy Test Failed: gRPC happy test scenario failed');
     }
     
     // Try to show snackbar safely
     try {
       if (Get.context != null) {
-        if (passedTests == totalTests) {
+        if (success) {
           Get.snackbar(
-            '🎉 All Tests Passed!',
-            'gRPC happy test scenario completed successfully ($passedTests/$totalTests)',
+            '🎉 Happy Test Passed!',
+            'gRPC happy test scenario completed successfully',
             backgroundColor: Colors.green,
             colorText: Colors.white,
             duration: const Duration(seconds: 5),
           );
         } else {
           Get.snackbar(
-            '⚠️ Some Tests Failed',
-            'gRPC happy test scenario: $passedTests/$totalTests tests passed',
+            '⚠️ Happy Test Failed',
+            'gRPC happy test scenario failed',
             backgroundColor: Colors.orange,
             colorText: Colors.white,
             duration: const Duration(seconds: 5),

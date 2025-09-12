@@ -6,6 +6,16 @@
     "configurations": [
         
         {
+            "name": "Flutter Windows",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+              "-d",
+              "windows"
+            ]
+          },        
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",

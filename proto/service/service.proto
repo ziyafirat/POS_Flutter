@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package service;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.service";
+option java_multiple_files = true;
+option java_outer_classname = "PosServiceProtoContainer";
+
+import "google/protobuf/empty.proto";
+import "domain/lane.proto";
+import "domain/create_transaction.proto";
+import "domain/set_customer.proto";
+import "domain/item.proto";
+import "domain/line_item.proto";
+import "common/requests.proto";
+import "domain/get_line_items.proto";
+import "domain/tender.proto";
+import "domain/totals.proto";
+import "domain/make_payment.proto";
+import "domain/quick_lookup.proto";
+import "domain/void_item.proto";
+import "domain/print_report.proto";
+import "domain/make_payment_interactive.proto";
+
+/**
+ * The primary service definition for the Point-of-Sale Business Component (POSBC).
+ * This service exposes all core functionalities for a self-checkout (SCO) lane.
+ */
+service PosService {
+  // Initializes a session for a specific lane. Must be the first call.
+  rpc Initialize (domain.LaneRequestProto) returns (google.protobuf.Empty);
+
+  // Gracefully shuts down the session for the lane.
+  rpc Shutdown (google.protobuf.Empty) returns (google.protobuf.Empty);
+
+  // Retrieves the list of all Quick Lookup (PLU) items, categorized for UI display.
+  rpc GetQuickLookupItems(google.protobuf.Empty) returns (domain.GetQuickLookupItemsResponseProto);
+
+  // Creates a new, empty transaction and returns its unique ID.
+  rpc CreateTransaction(domain.CreateTransactionRequestProto) returns (domain.CreateTransactionResponseProto);
+
+  // Associates a customer with the current transaction.
+  rpc SetCustomer(domain.SetCustomerRequestProto) returns (google.protobuf.Empty);
+
+  // Retrieves the full details of a single item from the catalog by its barcode.
+  rpc GetItem(domain.GetItemRequestProto) returns (domain.ItemResponseProto);
+
+  // Adds an item to the transaction by quantity.
+  rpc AddItemByQuantity(domain.AddItemByQuantityRequestProto) returns (domain.LineItemResponseProto);
+
+  // Adds an item to the transaction by weight.
+  rpc AddItemByWeight(domain.AddItemByWeightRequestProto) returns (domain.LineItemResponseProto);
+
+  // Retrieves all current line items in the transaction basket.
+  rpc GetLineItems(common.TransactionRequestProto) returns (domain.GetLineItemsResponseProto);
+
+  // Retrieves the current financial totals for the transaction.
+  rpc GetTotals(common.TransactionRequestProto) returns (domain.TotalsResponseProto);
+
+  // A signal to the server to apply any pre-payment calculations or promotions before make payment.
+  rpc ApplyPrePaymentOperations(common.TransactionRequestProto) returns (google.protobuf.Empty);
+
+  // A signal to the server to roll back any pre-payment operations and continue to purchase.
+  rpc RollbackPrePaymentOperations(common.TransactionRequestProto) returns (google.protobuf.Empty);
+
+  // Retrieves the list of payment methods (tenders) available for the current transaction.
+  rpc GetTenders(common.TransactionRequestProto) returns (domain.GetTendersResponseProto);
+
+  // Performs a simple, single-step payment.
+  rpc MakePayment(domain.MakePaymentRequestProto) returns (google.protobuf.Empty);
+
+  // Initiates a multi-step, interactive payment flow using a bidirectional stream.
+  // The client starts by sending a ClientPaymentActionProto with `start_payment` set.
+  // The server responds with a stream of ServerPaymentActionProto messages containing `prompt`s.
+  // The client responds to each prompt with a ClientPaymentActionProto containing a `prompt_result`.
+  // The flow concludes when the server sends a final `completion_status`.
+  rpc MakePaymentInteractive(stream domain.ClientPaymentActionProto) returns (stream domain.ServerPaymentActionProto);
+
+  // Finalizes the transaction after successful payment.
+  rpc CompleteTransaction(common.TransactionRequestProto) returns (google.protobuf.Empty);
+
+  // Voids a specific line item from the transaction.
+  rpc VoidItem(domain.VoidItemRequestProto) returns (google.protobuf.Empty);
+
+  // Voids the entire transaction.
+  rpc VoidTransaction(common.TransactionRequestProto) returns (google.protobuf.Empty);
+
+  // Requests the printing of a system report (e.g., end-of-day Z report).
+  rpc PrintReport(domain.PrintReportRequestProto) returns (google.protobuf.Empty);
+}

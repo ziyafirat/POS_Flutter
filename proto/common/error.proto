@@ -1,0 +1,23 @@
+// FILE: common/error.proto
+// -------------------------
+syntax = "proto3";
+
+package common;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.common";
+option java_multiple_files = true;
+option java_outer_classname = "ErrorProtoContainer";
+
+/**
+ * Represents a structured business error that can be returned by an RPC call.
+ * This provides a standardized way to communicate controlled, non-terminal failures.
+ */
+message BusinessErrorProto {
+  // A machine-readable, unique code identifying the specific error type.
+  // e.g., "POS_ITEM_NOT_FOUND", "POS_PURCHASE_LIMIT".
+  string errCode = 1;
+
+  // A human-readable, user-facing message describing the error.
+  // This message is suitable for display on a client UI.
+  string errMessage = 2;
+}

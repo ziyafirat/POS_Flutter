@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package domain;
+
+option java_package = "tr.com.pos.gem.posbc.api.grpc.domain";
+option java_multiple_files = true;
+option java_outer_classname = "PrintReportProtoContainer";
+
+/**
+ * A request to print a specific report.
+ */
+message PrintReportRequestProto {
+  // The identifier of the report to be printed (e.g., "X_REPORT", "Z_REPORT").
+  string report_id = 1;
+}
