@@ -42,7 +42,7 @@ message PromptProto {
   oneof prompt_type {
     ConfirmationPromptProto confirmation_prompt = 10;
     DateTimePromptProto date_prompt = 11;
-    InformationPromptProto information_prompt = 12;
+//    InformationPromptProto information_prompt = 12;
     MoneyPromptProto money_prompt = 13;
     NumberPromptProto number_prompt = 14;
     SelectOnePromptProto select_one_prompt = 15;
@@ -54,12 +54,12 @@ message PromptProto {
  * A prompt asking for a simple Yes/No or Accept/Reject response.
  */
 message ConfirmationPromptProto {
-  // The mandatory text for the positive action button (e.g., "Continue", "Yes").
-  string accept_label = 1;
-  // The mandatory text for the negative action button (e.g., "Decline", "No").
-  string reject_label = 2;
-  // An optional, third action to explicitly cancel the flow.
-  optional string cancel_label = 14;
+  bool accept_enabled = 1;
+  bool reject_enabled = 2;
+  bool cancel_enabled = 3;
+  optional string accept_label = 4;
+  optional string reject_label = 5;
+  optional string cancel_label = 6;
 }
 
 /**
@@ -77,6 +77,7 @@ message DateTimePromptProto {
     YYYYMMDD = 3;                // Year-Month-Day format, e.g., 2025-12-31.
     DDMMYYYYHHMI = 4;            // Day/Month/Year Hour:Minute, e.g., 31/12/2025 15:30.
     MMYYYY = 5;                  // Month/Year format, e.g., 12/2025.
+    HHMI = 6;
   }
 
   // The required format for the date input.
@@ -85,22 +86,26 @@ message DateTimePromptProto {
   optional SimpleDateTimeProto min_date = 2;
   // An optional maximum selectable date/time (inclusive).
   optional SimpleDateTimeProto max_date = 3;
-  // The optional text for the primary confirmation button (e.g., "OK", "Submit").
+  // The optional text for the "OK" button. If not provided client will use default.
   optional string ok_label = 13;
-  // The optional text for a secondary cancel button.
-  optional string cancel_label = 14;
+  // Enable cancel button on the client.
+  bool cancel_enabled = 14;
+  // The optional text for the "Cancel" button. If not provided and enable_cancel is true then client will use default.
+  optional string cancel_label = 15;
+  // The optional default value
+  SimpleDateTimeProto defaultValue = 16;
 }
 
 /**
  * A prompt that displays an informational message that must be acknowledged.
  * It is typically represented by a single action button.
  */
-message InformationPromptProto {
-  // The text for the single acknowledgment button (e.g., "OK", "Continue").
-  string acknowledge_label = 1;
-  // An optional, secondary action to explicitly cancel the flow.
-  optional string cancel_label = 14;
-}
+//message InformationPromptProto {
+//  // The text for the single acknowledgment button
+//  optional string ok_label = 1;
+//  // An optional, secondary action to explicitly cancel the flow.
+//  optional string cancel_label = 2;
+//}
 
 /**
  * A prompt for monetary input.
@@ -114,10 +119,14 @@ message MoneyPromptProto {
   optional int64 min_amount_in_lowest_denomination = 3;
   // Optional maximum allowed amount, in the currency's lowest denomination.
   optional int64 max_amount_in_lowest_denomination = 4;
-  // The optional text for the "OK" button.
+  // The optional text for the "OK" button. If not provided client will use default.
   optional string ok_label = 13;
-  // The optional text for the "Cancel" button.
-  optional string cancel_label = 14;
+  // Enable cancel button on the client.
+  bool cancel_enabled = 14;
+  // The optional text for the "Cancel" button. If not provided and enable_cancel is true then client will use default.
+  optional string cancel_label = 15;
+  // Optional default value
+  optional int64 default_value = 16;
 }
 
 /**
@@ -130,10 +139,14 @@ message NumberPromptProto {
   optional int32 max_digits = 2;
   // If `true`, the client must mask the input (e.g., for a PIN).
   bool is_secret = 3;
-  // The optional text for the "OK" button.
+  // The optional text for the "OK" button. If not provided client will use default.
   optional string ok_label = 13;
-  // The optional text for the "Cancel" button.
-  optional string cancel_label = 14;
+  // Enable cancel button on the client.
+  bool cancel_enabled = 14;
+  // The optional text for the "Cancel" button. If not provided and enable_cancel is true then client will use default.
+  optional string cancel_label = 15;
+  // Optional default value
+  optional string default_value = 16; // BigInteger is converted to string
 }
 
 /**
@@ -156,10 +169,12 @@ message SelectOnePromptProto {
   int32 column_count = 2;
   // A string containing column header texts, separated by a server-defined delimiter.
   optional string delimited_column_header_texts = 3;
-  // The optional text for the "OK" button.
+  // The optional text for the "OK" button. If not provided client will use default.
   optional string ok_label = 13;
-  // The optional text for the "Cancel" button.
-  optional string cancel_label = 14;
+  // Enable cancel button on the client.
+  bool cancel_enabled = 14;
+  // The optional text for the "Cancel" button. If not provided and enable_cancel is true then client will use default.
+  optional string cancel_label = 15;
 }
 
 /**
@@ -172,10 +187,14 @@ message StringPromptProto {
   optional int32 max_length = 2;
   // If `true`, the client must mask the input (e.g., for a password).
   bool is_secret = 3;
-  // The optional text for the "OK" button.
+  // The optional text for the "OK" button. If not provided client will use default.
   optional string ok_label = 13;
-  // The optional text for the "Cancel" button.
-  optional string cancel_label = 14;
+  // Enable cancel button on the client.
+  bool cancel_enabled = 14;
+  // The optional text for the "Cancel" button. If not provided and enable_cancel is true then client will use default.
+  optional string cancel_label = 15;
+  // Optional default value
+  optional string default_value = 16;
 }
 
 /**
@@ -223,7 +242,7 @@ message ResultValueProto {
   oneof result_type {
     ConfirmationResultProto confirmation_result = 1;
     DateResultProto date_result = 2;
-    InformationResultProto information_result = 3;
+//    InformationResultProto information_result = 3;
     MoneyResultProto money_result = 4;
     NumberResultProto number_result = 5;
     SelectOneResultProto selection_result = 6;
@@ -231,12 +250,38 @@ message ResultValueProto {
   }
 }
 
+
+
 /**
- * The result for a `StringPromptProto`.
+ * The result for a `ConfirmationPromptProto`.
  */
-message StringResultProto {
-  // The string value entered by the user.
-  string value = 1;
+message ConfirmationResultProto {
+  // `true` if the user chose the positive action, `false` for the negative action.
+  bool accepted = 1;
+}
+
+/**
+ * The result for a `DateTimePromptProto`.
+ */
+message DateResultProto {
+  // The date/time value selected by the user.
+  SimpleDateTimeProto value = 1;
+}
+
+/**
+ * The result for an `InformationPromptProto`.
+ * This message is intentionally empty as acknowledging it is the only action.
+ */
+//message InformationResultProto {}
+
+/**
+ * The result for a `MoneyPromptProto`.
+ */
+message MoneyResultProto {
+  // The total amount in the currency's smallest unit (e.g., cents).
+  int64 amount_in_lowest_denomination = 1;
+  // The ISO 4217 currency code, matching the original prompt.
+  string currency_code = 2;
 }
 
 /**
@@ -244,7 +289,7 @@ message StringResultProto {
  */
 message NumberResultProto {
   // The numeric value entered by the user.
-  int64 value = 1;
+  string value = 1; // To support more digits than int64 is capable
 }
 
 /**
@@ -256,35 +301,11 @@ message SelectOneResultProto {
 }
 
 /**
- * The result for a `ConfirmationPromptProto`.
+ * The result for a `StringPromptProto`.
  */
-message ConfirmationResultProto {
-  // `true` if the user chose the positive action, `false` for the negative action.
-  bool accepted = 1;
-}
-
-/**
- * The result for an `InformationPromptProto`.
- * This message is intentionally empty as acknowledging it is the only action.
- */
-message InformationResultProto {}
-
-/**
- * The result for a `DateTimePromptProto`.
- */
-message DateResultProto {
-  // The date/time value selected by the user.
-  SimpleDateTimeProto value = 1;
-}
-
-/**
- * The result for a `MoneyPromptProto`.
- */
-message MoneyResultProto {
-  // The total amount in the currency's smallest unit (e.g., cents).
-  int64 amount_in_lowest_denomination = 1;
-  // The ISO 4217 currency code, matching the original prompt.
-  string currency_code = 2;
+message StringResultProto {
+  // The string value entered by the user.
+  string value = 1;
 }
 
 /**

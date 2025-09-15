@@ -244,6 +244,12 @@ class AssistantPage extends StatelessWidget {
                       }
                     },
                   ),
+                  _buildTestButton(
+                    'gRPC Genius Test',
+                    Icons.play_circle,
+                    Colors.deepPurple,
+                    () => controller.runGrpcTest(),
+                  ),
                 ],
               ),
             ),

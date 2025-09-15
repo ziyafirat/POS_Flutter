@@ -6,6 +6,7 @@ import '../models/app_state.dart';
 import '../models/alert_message.dart';
 import '../services/grpc_service.dart';
 import '../services/mqtt_service.dart';
+import '../test/grpc_test.dart';
 import 'language_controller.dart';
 
 class AppController extends GetxController {
@@ -401,4 +402,100 @@ class AppController extends GetxController {
   void simulateAlert() {
     _mqttService.simulateAlert();
   }
+
+  void _showSnackbarSafely(String title, String message, Color backgroundColor) {
+    try {
+      // Check if we have a valid context and overlay
+      if (Get.context != null && Get.context!.mounted) {
+        Get.snackbar(
+          title,
+          message,
+          backgroundColor: backgroundColor,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        // Fallback to logging if UI is not ready
+        _logger.i('UI not ready for snackbar: $title - $message');
+      }
+    } catch (e) {
+      // Fallback to logging if snackbar fails
+      _logger.w('Snackbar failed: $e - $title - $message');
+    }
+  }
+
+  Future<void> runGrpcTest() async {
+    _logger.i('🚀 Starting gRPC Connection Test...');
+    
+    try {
+      // Import the GrpcConnection class
+      // final app = GrpcConnection("localhost", 50051);
+      
+      // // Initialize with lane configuration
+      // await app.initialize(GrpcLane(
+      //   companyId: "pos",
+      //   storeId: "paladium",
+      //   laneId: "lane-05",
+      //   userName: "user",
+      //   password: "password",
+      // ));
+
+      // // Create transaction
+      // final txId = await app.createTransaction("SCO_ORDER_12345");
+      
+      // // Set customer
+      // await app.setCustomer(txId, "5322100000");
+      
+      // // Add item by quantity
+      // await app.addItemByQuantity(txId, "NORMAL_ITEM_WITH_NO_WEIGHT_DEFINED", 2);
+      
+      // // Get totals
+      // final totals = await app.getTotals(txId);
+      // _logger.i("Balance due: ${totals.balanceDue}");
+      
+      // // Shutdown
+      // await app.shutdown();
+
+
+      final grpc = GrpcConnection("localhost", 50051);
+
+await grpc.initialize(GrpcLane(
+  companyId: "company",
+  storeId: "paladium",
+  laneId: "lane-05",
+  userName: "user",
+  password: "password"));
+
+final txId = await grpc.createTransaction("SCO_ORDER_12345");
+await grpc.setCustomer(txId, "5322100000");
+await grpc.addItemByQuantity(txId, "NORMAL_ITEM_WITH_NO_WEIGHT_DEFINED", 2);
+
+final totals = await grpc.getTotals(txId);
+print("Balance due: ${totals.balanceDue}");
+
+await grpc.shutdown();
+
+      
+      _logger.i('✅ gRPC Connection Test completed successfully');
+      
+      // Show success snackbar safely
+      _showSnackbarSafely(
+        'gRPC Test Passed',
+        'gRPC Connection Test completed successfully',
+        Colors.green,
+      );
+      
+    } catch (e) {
+      _logger.e('❌ gRPC Connection Test failed: $e');
+      
+      // Show error snackbar safely
+      _showSnackbarSafely(
+        '❌ gRPC Test Failed',
+        'gRPC Connection Test failed: $e',
+        Colors.red,
+      );
+    }
+  }
+
 }

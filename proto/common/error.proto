@@ -21,3 +21,17 @@ message BusinessErrorProto {
   // This message is suitable for display on a client UI.
   string errMessage = 2;
 }
+
+/**
+ * Provides detailed, structured information about a client-side failure.
+ * This is embedded in the gRPC Status trailers for rich error propagation.
+ */
+message ClientErrorDetailsProto {
+  // The simple class name of the exception that occurred on the client.
+  // e.g., "IllegalArgumentException"
+  string exception_class = 1;
+
+  // The message from the original exception.
+  // e.g., "okLabel can't be null"
+  string exception_message = 2;
+}

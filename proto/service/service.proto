@@ -74,7 +74,7 @@ service PosService {
   // The server responds with a stream of ServerPaymentActionProto messages containing `prompt`s.
   // The client responds to each prompt with a ClientPaymentActionProto containing a `prompt_result`.
   // The flow concludes when the server sends a final `completion_status`.
-  rpc MakePaymentInteractive(stream domain.ClientPaymentActionProto) returns (stream domain.ServerPaymentActionProto);
+  rpc MakePaymentInteractive(stream domain.ClientPaymentActionProto) returns (stream domain.ServerActionProto);
 
   // Finalizes the transaction after successful payment.
   rpc CompleteTransaction(common.TransactionRequestProto) returns (google.protobuf.Empty);

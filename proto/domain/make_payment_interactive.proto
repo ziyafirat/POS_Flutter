@@ -20,7 +20,7 @@ option java_outer_classname = "MakePaymentInteractiveProtoContainer";
 message ClientPaymentActionProto {
   // A client-generated unique identifier for this entire payment attempt.
   // This MUST be included in every message from the client for this flow.
-  string payment_attempt_id = 1;
+  string interaction_attempt_id = 1;
 
   /**
    * The specific action being sent.
@@ -49,28 +49,43 @@ message StartPaymentProto {
  * A wrapper for any message sent from the server to the client during an
  * interactive payment flow.
  */
-message ServerPaymentActionProto {
+message ServerActionProto {
   // The unique identifier for this payment attempt, echoing the client's original ID.
-  string payment_attempt_id = 1;
+  string interaction_attempt_id = 1;
 
   /**
    * The specific action the server is commanding.
    */
   oneof action_type {
     // A command telling the client to render a specific UI prompt.
-    // See `domain/interaction_message.proto`.
     PromptProto prompt = 2;
     // The FINAL message, indicating the entire payment flow has concluded.
-    PaymentCompletionStatusProto completion_status = 3;
+    CompletionStatusProto completion_status = 3;
+    // A command to programmatically close a prompt that is currently being displayed.
+    ClosePromptProto close_prompt = 4;
   }
 }
 
 /**
- * The final status of the entire payment flow. This is a terminal message.
+ * A command from the server to the client, instructing it to dismiss
+ * the currently displayed prompt with the matching ID.
  */
-message PaymentCompletionStatusProto {
-  // `true` if the payment was successful, `false` otherwise.
+message ClosePromptProto {
+  // The unique ID of the prompt that should be closed. This is used to
+  // prevent race conditions where this command could accidentally close a
+  // newer, different prompt.
+  string prompt_id = 1;
+}
+
+
+/**
+ * The final status of the entire interaction flow. This is a terminal message.
+ */
+message CompletionStatusProto {
+  // `true` if the interaction flow was successful, `false` otherwise.
   bool success = 1;
   // The final, user-facing message to display on the client UI.
   string final_message = 2;
+
+  // todo: we may implement enum completion.reason (PromptTimeout, SessionTimeout, SessionClosedByClient)
 }

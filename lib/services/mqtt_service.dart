@@ -23,25 +23,13 @@ class MqttService {
 
   Future<bool> connect() async {
     try {
-      // Check if already connected
-      if (_isConnected && _client?.connectionStatus == MqttConnectionState.connected) {
-        _logger.i('✅ [MQTT] Already connected to broker');
-        return true;
-      }
-      
-      // Disconnect existing connection if any
-      if (_client != null) {
-        _logger.i('🔌 [MQTT] Disconnecting existing connection...');
-        await disconnect();
-      }
-      
       // MQTT Configuration
       const String brokerAddress = '192.168.2.173';
       const int brokerPort = 1883;
       const String clientIdentifier = '500';
-      const String mqttUsername = 'admin'; // Replace with actual username
-      const String mqttPassword = 'admin'; // Replace with actual password
-      const bool mqttSecure = false; // Set to true if using SSL/TLS
+      const String mqttUsername = 'admin';
+      const String mqttPassword = 'admin';
+      const bool mqttSecure = false;
       
       _logger.i('🔌 [MQTT] Starting connection to broker...');
       _logger.i('🔌 [MQTT] Broker: $brokerAddress:$brokerPort');
@@ -56,51 +44,37 @@ class MqttService {
         return false;
       }
       
-      _logger.i('🔌 [MQTT] Creating MQTT client instance...');
+      // Create a fresh client instance (like the working testConnectionWithSSL method)
+      _logger.i('🔌 [MQTT] Creating new MQTT client instance...');
       _client = MqttServerClient(brokerAddress, clientIdentifier);
       _client!.port = brokerPort;
       _client!.secure = mqttSecure;
-      _client!.logging(on: true); // Enable logging for debugging
+      _client!.logging(on: false); // Match working method - disable logging
       _client!.autoReconnect = false;
-      _client!.keepAlivePeriod = 20; // Set keep alive period
-      _client!.connectTimeoutPeriod = 10000; // 10 second timeout
-      // _client!.onBadCertificate = (_) => true; // Uncomment if needed for SSL
+      _client!.keepAlivePeriod = 20;
+      _client!.connectTimeoutPeriod = 10000;
       
-      _logger.i('🔌 [MQTT] Client configuration:');
-      _logger.i('🔌 [MQTT] - Port: ${_client!.port}');
-      _logger.i('🔌 [MQTT] - Secure: ${_client!.secure}');
-      _logger.i('🔌 [MQTT] - Logging: ${_client!.logging}');
-      _logger.i('🔌 [MQTT] - Auto Reconnect: ${_client!.autoReconnect}');
-
-      _logger.i('🔌 [MQTT] Configuring connection message with authentication...');
+      // Set connection message (like the working method)
       _client!.connectionMessage = MqttConnectMessage()
           .withClientIdentifier(clientIdentifier)
           .authenticateAs(mqttUsername, mqttPassword);
-
-      _logger.i('🔌 [MQTT] Connection message configured:');
-      _logger.i('🔌 [MQTT] - Client ID: $clientIdentifier');
-      _logger.i('🔌 [MQTT] - Username: $mqttUsername');
-      _logger.i('🔌 [MQTT] - Password: [HIDDEN]');
-
+      
+      // Set up callbacks
       _client!.onConnected = _onConnected;
       _client!.onDisconnected = _onDisconnected;
-
-      _logger.i('🔌 [MQTT] Attempting to connect with authentication...');
-      _logger.i('🔌 [MQTT] Connection timeout: ${_client!.connectTimeoutPeriod}ms');
       
-      try {
-        await _client!.connect(mqttUsername, mqttPassword);
-        _logger.i('🔌 [MQTT] Connection attempt completed. Status: ${_client!.connectionStatus}');
-      } catch (connectError) {
-        _logger.e('❌ [MQTT] Connection attempt failed with error: $connectError');
-        _logger.e('❌ [MQTT] Connection status: ${_client!.connectionStatus}');
-        return false;
-      }
+      _logger.i('🔌 [MQTT] Attempting to connect...');
       
-      // Wait a moment for connection to establish
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Connect (like the working method)
+      await _client!.connect(mqttUsername, mqttPassword);
       
-      if (_client!.connectionStatus == MqttConnectionState.connected) {
+      // Wait for connection to establish (like the working method)
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Check connection status (like the working method)
+      final connected = _client!.connectionStatus?.state == MqttConnectionState.connected;
+      
+      if (connected) {
         _isConnected = true;
         _logger.i('✅ [MQTT] Connection established successfully!');
         _logger.i('✅ [MQTT] Client state: ${_client!.connectionStatus}');
@@ -110,12 +84,7 @@ class MqttService {
         return true;
       } else {
         _logger.e('❌ [MQTT] Connection failed. Status: ${_client!.connectionStatus}');
-        _logger.e('❌ [MQTT] Connection state: ${_client!.connectionStatus}');
-        _logger.e('❌ [MQTT] Possible causes:');
-        _logger.e('❌ [MQTT] - Broker not running at $brokerAddress:$brokerPort');
-        _logger.e('❌ [MQTT] - Network connectivity issues');
-        _logger.e('❌ [MQTT] - Authentication failed (username/password)');
-        _logger.e('❌ [MQTT] - Client ID conflict');
+        _isConnected = false;
         return false;
       }
     } catch (e, stackTrace) {
@@ -375,7 +344,7 @@ class MqttService {
       // Wait briefly for connection
       await Future.delayed(const Duration(milliseconds: 200));
       
-      final isReachable = testClient.connectionStatus == MqttConnectionState.connected;
+      final isReachable = testClient.connectionStatus?.state == MqttConnectionState.connected;
       
       if (isReachable) {
         _logger.i('✅ [MQTT] Broker is reachable');

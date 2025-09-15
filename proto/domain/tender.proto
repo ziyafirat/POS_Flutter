@@ -16,6 +16,8 @@ message TenderProto {
   string tender_description = 2;
   // Any additional, unstructured information about the tender.
   string extra_info = 3;
+  // Requires cars to scan on cancellation of the transaction. UI should behave accordingly.
+  bool requires_card_to_scan_on_cancel_transaction = 4;
 
   /**
    * Defines the behavior of the tender.
@@ -32,10 +34,9 @@ message TenderProto {
  * Defines the properties of a simple, single-step tender.
  */
 message StaticTenderDetails {
-  bool is_credit_card = 1;
-  bool require_otp = 2;
-  bool require_pin = 3;
-  bool allow_partial_payment = 4;
+  bool require_otp = 1;
+  bool require_pin = 2;
+  bool allow_partial_payment = 3;
 }
 
 /**
