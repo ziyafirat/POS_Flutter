@@ -8,30 +8,49 @@ import '../services/eft.dart';
 import '../models/app_state.dart';
 import '../test/mqtt_test_widget.dart';
 
-class AssistantPage extends StatelessWidget {
+class AssistantPage extends StatefulWidget {
   const AssistantPage({super.key});
+
+  @override
+  State<AssistantPage> createState() => _AssistantPageState();
+}
+
+class _AssistantPageState extends State<AssistantPage> {
+  LampController? lampController;
+  NiVm? eftService;
+  bool _controllersInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers after the widget tree is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeControllers();
+    });
+  }
+
+  void _initializeControllers() {
+    try {
+      if (!_controllersInitialized) {
+        lampController = Get.isRegistered<LampController>() 
+            ? Get.find<LampController>() 
+            : Get.put(LampController(), permanent: true);
+        eftService = Get.isRegistered<NiVm>() 
+            ? Get.find<NiVm>() 
+            : Get.put(NiVm(), permanent: true);
+        _controllersInitialized = true;
+        setState(() {});
+      }
+    } catch (e) {
+      print('Controller initialization error: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
     final ScannerService scannerService = Get.find<ScannerService>();
     final UsbPrinterService printerService = Get.find<UsbPrinterService>();
-    
-    // Initialize controllers safely to avoid overlay issues
-    LampController? lampController;
-    NiVm? eftService;
-    
-    try {
-      lampController = Get.isRegistered<LampController>() 
-          ? Get.find<LampController>() 
-          : Get.put(LampController(), permanent: true);
-      eftService = Get.isRegistered<NiVm>() 
-          ? Get.find<NiVm>() 
-          : Get.put(NiVm(), permanent: true);
-    } catch (e) {
-      // Fallback if controllers can't be initialized
-      print('Controller initialization error: $e');
-    }
 
     return Scaffold(
       appBar: AppBar(
