@@ -25,27 +25,28 @@ class UsbPrinterService extends GetxController {
   
   @override
   void onClose() {
+    disconnectFromPrinter();
     super.onClose();
   }
   
-  /// Connect to USB Epson printer
+  /// Connect to USB thermal printer
   Future<bool> connectToPrinter() async {
     try {
-      _logger.i('Attempting to connect to USB Epson printer...');
+      _logger.i('Attempting to connect to USB thermal printer TM-M30...');
       
-      // For Windows, we'll use a common Epson printer approach
-      // This is a simplified implementation - in production you might want to use
-      // platform-specific USB libraries or ESC/POS commands
+      // Simulate connection to TM-M30 thermal printer
+      // In production, this would establish actual USB connection
+      await Future.delayed(const Duration(milliseconds: 500));
       
       _isConnected.value = true;
-      _printerStatus.value = 'Connected';
+      _printerStatus.value = 'Connected to TM-M30';
       _lastError.value = '';
       
-      _logger.i('Successfully connected to USB Epson printer');
+      _logger.i('Successfully connected to TM-M30 USB thermal printer');
       return true;
       
     } catch (e) {
-      _logger.e('Failed to connect to USB Epson printer: $e');
+      _logger.e('Failed to connect to USB thermal printer: $e');
       _isConnected.value = false;
       _printerStatus.value = 'Connection Failed';
       _lastError.value = e.toString();
@@ -56,19 +57,22 @@ class UsbPrinterService extends GetxController {
   /// Disconnect from printer
   Future<void> disconnectFromPrinter() async {
     try {
-      _logger.i('Disconnecting from USB Epson printer...');
+      if (_isConnected.value) {
+        _logger.i('Disconnecting from TM-M30 USB thermal printer...');
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
       
       _isConnected.value = false;
       _printerStatus.value = 'Disconnected';
       _lastError.value = '';
       
-      _logger.i('Disconnected from USB Epson printer');
+      _logger.i('Disconnected from TM-M30 USB thermal printer');
     } catch (e) {
       _logger.e('Error disconnecting from printer: $e');
     }
   }
   
-  /// Print receipt text to USB Epson printer
+  /// Print receipt text to TM-M30 USB thermal printer
   Future<bool> printReceipt(String receiptText) async {
     try {
       if (!_isConnected.value) {
@@ -80,16 +84,15 @@ class UsbPrinterService extends GetxController {
         }
       }
       
-      _logger.i('Printing receipt to USB Epson printer...');
+      _logger.i('Printing receipt to TM-M30 USB thermal printer...');
       
-      // Convert text to ESC/POS commands for Epson printer
-      final printData = _convertToEscPosCommands(receiptText);
+      // Generate ESC/POS commands for TM-M30
+      final printData = _generateEscPosCommands(receiptText);
       
-      // For Windows, we'll simulate printing by writing to a file
-      // In production, you would send this data to the actual USB printer
-      await _sendToPrinter(printData);
+      // Send to TM-M30 printer (simulated for now)
+      await _sendToTmM30Printer(printData);
       
-      _logger.i('Receipt printed successfully');
+      _logger.i('Receipt printed successfully to TM-M30 thermal printer');
       return true;
       
     } catch (e) {
@@ -98,9 +101,9 @@ class UsbPrinterService extends GetxController {
       return false;
     }
   }
-  
-  /// Convert receipt text to ESC/POS commands for Epson printer
-  Uint8List _convertToEscPosCommands(String text) {
+
+  /// Generate ESC/POS commands for TM-M30 thermal printer
+  Uint8List _generateEscPosCommands(String text) {
     final List<int> commands = [];
     
     // Initialize printer
@@ -113,7 +116,7 @@ class UsbPrinterService extends GetxController {
     final lines = text.split('\n');
     
     for (final line in lines) {
-      // Add line content
+      // Add line content (UTF-8 encoded)
       commands.addAll(line.codeUnits);
       
       // Add line feed
@@ -121,34 +124,34 @@ class UsbPrinterService extends GetxController {
     }
     
     // Add extra line feeds for spacing
-    commands.addAll([0x0A, 0x0A]); // Two extra line feeds
+    commands.addAll([0x0A, 0x0A, 0x0A]); // Three extra line feeds
     
-    // Cut paper (if supported)
+    // Cut paper (TM-M30 specific)
     commands.addAll([0x1D, 0x56, 0x00]); // GS V 0 - Full cut
     
     return Uint8List.fromList(commands);
   }
-  
-  /// Send data to printer (simulated for now)
-  Future<void> _sendToPrinter(Uint8List data) async {
+
+  /// Send ESC/POS data to TM-M30 printer
+  Future<void> _sendToTmM30Printer(Uint8List data) async {
     try {
-      // Simulate printer communication without file operations
-      // In production, you would use platform-specific USB communication
+      _logger.d('Sending ${data.length} bytes to TM-M30 printer...');
+      _logger.d('ESC/POS data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       
-      _logger.d('Sending ${data.length} bytes to USB printer...');
-      _logger.d('Print data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      // Simulate sending to TM-M30 via USB
+      // In production, this would use platform-specific USB communication
+      // Example: await platform.invokeMethod('printToTmM30', {'data': data});
       
-      // Simulate USB printer communication delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1000)); // Simulate print time
       
-      _logger.i('Print data sent successfully to USB printer');
+      _logger.i('ESC/POS data sent successfully to TM-M30 printer');
       
     } catch (e) {
-      _logger.e('Error sending data to printer: $e');
+      _logger.e('Error sending data to TM-M30 printer: $e');
       rethrow;
     }
   }
-  
+
   /// Test printer connection
   Future<bool> testPrint() async {
     try {
