@@ -91,10 +91,10 @@ class MainNavigationWrapper extends StatelessWidget {
           // Main content with status bar
           Column(
             children: [
-              // MQTT Status Bar
-              const MqttStatusBar(),
               // Main content
               Expanded(child: currentPage),
+              // MQTT Status Bar (moved to bottom)
+              const MqttStatusBar(),
             ],
           ),
           // Fraud alert popup overlay
