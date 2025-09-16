@@ -50,6 +50,7 @@ class AlertMessage {
 
 enum AlertType {
   security,
+  fraud,
   maintenance,
   promotion,
   system,

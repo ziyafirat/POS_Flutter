@@ -14,21 +14,32 @@ class MqttService {
   MqttServerClient? _client;
   bool _isConnected = false;
   final StreamController<AlertMessage> _alertController = StreamController<AlertMessage>.broadcast();
+  
+  // MQTT Configuration - Topic Prefix
+  static const String _topicPrefix = 'ssco/idol/';
+  static const String _alertsTopic = '${_topicPrefix}alerts';
+  
+  // Configuration properties
+  String brokerHost = '192.168.2.173';
+  int brokerPort = 1883;
+  String username = 'admin';
+  String password = 'admin';
+  String topic = _alertsTopic;
 
   Stream<AlertMessage> get alertStream => _alertController.stream;
 
   Future<bool> connect() async {
     try {
       // MQTT Configuration
-      const String brokerAddress = 'dev-solace-node.walkout.eu';
-      const int brokerPort = 30285;
-      const String clientIdentifier = 'self_checkout_client';
-      const String mqttUsername = 'admin'; // Replace with actual username
-      const String mqttPassword = 'admin'; // Replace with actual password
-      const bool mqttSecure = false; // Set to true if using SSL/TLS
+      final String brokerAddress = brokerHost;
+      final int port = brokerPort;
+      const String clientIdentifier = '500';
+      final String mqttUsername = username;
+      final String mqttPassword = password;
+      const bool mqttSecure = false;
       
       _logger.i('🔌 [MQTT] Starting connection to broker...');
-      _logger.i('🔌 [MQTT] Broker: $brokerAddress:$brokerPort');
+      _logger.i('🔌 [MQTT] Broker: $brokerAddress:$port');
       _logger.i('🔌 [MQTT] Client ID: $clientIdentifier');
       _logger.i('🔌 [MQTT] Username: $mqttUsername');
       _logger.i('🔌 [MQTT] Secure: $mqttSecure');
@@ -40,47 +51,47 @@ class MqttService {
         return false;
       }
       
-      _logger.i('🔌 [MQTT] Creating MQTT client instance...');
+      // Create a fresh client instance (like the working testConnectionWithSSL method)
+      _logger.i('🔌 [MQTT] Creating new MQTT client instance...');
       _client = MqttServerClient(brokerAddress, clientIdentifier);
-      _client!.port = brokerPort;
+      _client!.port = port;
       _client!.secure = mqttSecure;
-      _client!.logging(on: false);
+      _client!.logging(on: false); // Match working method - disable logging
       _client!.autoReconnect = false;
-      // _client!.onBadCertificate = (_) => true; // Uncomment if needed for SSL
+      _client!.keepAlivePeriod = 20;
+      _client!.connectTimeoutPeriod = 10000;
       
-      _logger.i('🔌 [MQTT] Client configuration:');
-      _logger.i('🔌 [MQTT] - Port: ${_client!.port}');
-      _logger.i('🔌 [MQTT] - Secure: ${_client!.secure}');
-      _logger.i('🔌 [MQTT] - Logging: ${_client!.logging}');
-      _logger.i('🔌 [MQTT] - Auto Reconnect: ${_client!.autoReconnect}');
-
-      _logger.i('🔌 [MQTT] Configuring connection message with authentication...');
+      // Set connection message (like the working method)
       _client!.connectionMessage = MqttConnectMessage()
           .withClientIdentifier(clientIdentifier)
           .authenticateAs(mqttUsername, mqttPassword);
-
-      _logger.i('🔌 [MQTT] Connection message configured:');
-      _logger.i('🔌 [MQTT] - Client ID: $clientIdentifier');
-      _logger.i('🔌 [MQTT] - Username: $mqttUsername');
-      _logger.i('🔌 [MQTT] - Password: [HIDDEN]');
-
+      
+      // Set up callbacks
       _client!.onConnected = _onConnected;
       _client!.onDisconnected = _onDisconnected;
-
-      _logger.i('🔌 [MQTT] Attempting to connect with authentication...');
+      
+      _logger.i('🔌 [MQTT] Attempting to connect...');
+      
+      // Connect (like the working method)
       await _client!.connect(mqttUsername, mqttPassword);
       
-      _logger.i('🔌 [MQTT] Connection attempt completed. Status: ${_client!.connectionStatus}');
+      // Wait for connection to establish (like the working method)
+      await Future.delayed(const Duration(milliseconds: 1000));
       
-      if (_client!.connectionStatus == MqttConnectionState.connected) {
+      // Check connection status (like the working method)
+      final connected = _client!.connectionStatus?.state == MqttConnectionState.connected;
+      
+      if (connected) {
         _isConnected = true;
         _logger.i('✅ [MQTT] Connection established successfully!');
         _logger.i('✅ [MQTT] Client state: ${_client!.connectionStatus}');
+        _logger.i('✅ [MQTT] Client ID: ${_client!.clientIdentifier}');
+        _logger.i('✅ [MQTT] Broker: ${_client!.server}:${_client!.port}');
         _subscribeToTopics();
         return true;
       } else {
         _logger.e('❌ [MQTT] Connection failed. Status: ${_client!.connectionStatus}');
-        _logger.e('❌ [MQTT] Connection state: ${_client!.connectionStatus}');
+        _isConnected = false;
         return false;
       }
     } catch (e, stackTrace) {
@@ -107,15 +118,16 @@ class MqttService {
   void _subscribeToTopics() {
     if (_client != null && _isConnected) {
       _logger.i('📡 [MQTT] Subscribing to topics...');
-      _logger.i('📡 [MQTT] Topic: self_checkout/alerts');
+      _logger.i('📡 [MQTT] Topic Prefix: $_topicPrefix');
+      _logger.i('📡 [MQTT] Topic: $_alertsTopic');
       _logger.i('📡 [MQTT] QoS: ${MqttQos.atLeastOnce}');
       
-      _client!.subscribe('self_checkout/alerts', MqttQos.atLeastOnce);
+      _client!.subscribe(_alertsTopic, MqttQos.atLeastOnce);
       _logger.i('📡 [MQTT] Subscription request sent');
       
       _client!.updates!.listen(_onMessage);
       _logger.i('📡 [MQTT] Message listener attached');
-      _logger.i('📡 [MQTT] Ready to receive messages on topic: self_checkout/alerts');
+      _logger.i('📡 [MQTT] Ready to receive messages on topic: $_alertsTopic');
     } else {
       _logger.e('❌ [MQTT] Cannot subscribe - client is null or not connected');
       _logger.e('❌ [MQTT] Client null: ${_client == null}');
@@ -145,11 +157,23 @@ class MqttService {
       
       // Parse alert message (simplified - in real app, use proper JSON parsing)
       _logger.i('🚨 [MQTT] Processing alert message...');
+      
+      // Determine alert type based on message content
+      AlertType alertType = AlertType.security;
+      String title = 'Security Alert';
+      
+      if (message.toLowerCase().contains('fraud') || 
+          message.toLowerCase().contains('theft') ||
+          message.toLowerCase().contains('suspicious')) {
+        alertType = AlertType.fraud;
+        title = 'Fraud Alert';
+      }
+      
       final alert = AlertMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: 'Security Alert',
+        title: title,
         message: message,
-        type: AlertType.security,
+        type: alertType,
         videoUrl: 'https://example.com/alert_video.mp4', // Mock video URL
         timestamp: DateTime.now(),
         isActive: true,
@@ -252,10 +276,107 @@ class MqttService {
 
   // Test method for assistant screen
   Future<bool> testConnection() async {
-    _logger.i('🧪 [MQTT] Testing connection...');
-    final result = await connect();
-    _logger.i('🧪 [MQTT] Test connection result: $result');
-    return result;
+    try {
+      _logger.i('🧪 [MQTT] Starting comprehensive connection test...');
+      _logger.i('🧪 [MQTT] Current connection status: $_isConnected');
+      
+      // First test broker reachability
+      _logger.i('🧪 [MQTT] Step 1: Testing broker reachability...');
+      final brokerReachable = await testBrokerReachability();
+      
+      if (!brokerReachable) {
+        _logger.e('❌ [MQTT] Broker reachability test failed');
+        _logger.e('❌ [MQTT] Cannot proceed with connection test');
+        _logger.e('❌ [MQTT] Troubleshooting steps:');
+        _logger.e('❌ [MQTT] 1. Check if MQTT broker is running at 192.168.2.173:1883');
+        _logger.e('❌ [MQTT] 2. Verify network connectivity to broker');
+        _logger.e('❌ [MQTT] 3. Check firewall settings');
+        _logger.e('❌ [MQTT] 4. Verify broker configuration');
+        return false;
+      }
+      
+      _logger.i('✅ [MQTT] Broker reachability test passed');
+      
+      // Now test actual connection
+      _logger.i('🧪 [MQTT] Step 2: Testing actual connection...');
+      final result = await connect();
+      _logger.i('🧪 [MQTT] Connection test result: $result');
+      
+      if (result) {
+        _logger.i('✅ [MQTT] Full connection test successful');
+        _logger.i('✅ [MQTT] Connected to: ssco/idol/alerts');
+      } else {
+        _logger.w('⚠️ [MQTT] Connection test failed despite broker being reachable');
+        _logger.w('⚠️ [MQTT] Possible authentication or configuration issues');
+      }
+      
+      return result;
+    } catch (e, stackTrace) {
+      _logger.e('❌ [MQTT] Test connection error: $e');
+      _logger.e('❌ [MQTT] Stack trace: $stackTrace');
+      return false;
+    }
+  }
+  
+  // Get current topic configuration
+  Map<String, String> getTopicConfiguration() {
+    return {
+      'topicPrefix': _topicPrefix,
+      'alertsTopic': _alertsTopic,
+    };
+  }
+  
+  // Get the alerts topic for external use
+  String get alertsTopic => _alertsTopic;
+  
+  // Get the topic prefix for external use
+  String get topicPrefix => _topicPrefix;
+  
+  // Check connection status without attempting to connect
+  Map<String, dynamic> getConnectionStatus() {
+    return {
+      'isConnected': _isConnected,
+      'clientExists': _client != null,
+      'connectionState': _client?.connectionStatus?.toString() ?? 'Unknown',
+      'brokerAddress': '192.168.2.173',
+      'brokerPort': 1883,
+      'topicPrefix': _topicPrefix,
+      'alertsTopic': _alertsTopic,
+    };
+  }
+  
+  // Test broker reachability (simplified ping test)
+  Future<bool> testBrokerReachability() async {
+    try {
+      _logger.i('🌐 [MQTT] Testing broker reachability...');
+      
+      // Create a temporary client just for testing
+      final testClient = MqttServerClient('192.168.2.173', 'test_client_${DateTime.now().millisecondsSinceEpoch}');
+      testClient.port = 1883;
+      testClient.secure = false;
+      testClient.logging(on: false);
+      testClient.connectTimeoutPeriod = 5000; // 5 second timeout for test
+      
+      _logger.i('🌐 [MQTT] Attempting connection test...');
+      await testClient.connect('admin', 'admin');
+      
+      // Wait briefly for connection
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      final isReachable = testClient.connectionStatus?.state == MqttConnectionState.connected;
+      
+      if (isReachable) {
+        _logger.i('✅ [MQTT] Broker is reachable');
+        testClient.disconnect();
+      } else {
+        _logger.w('⚠️ [MQTT] Broker is not reachable');
+      }
+      
+      return isReachable;
+    } catch (e) {
+      _logger.e('❌ [MQTT] Broker reachability test failed: $e');
+      return false;
+    }
   }
 
   // Simulate alert for testing
@@ -280,5 +401,28 @@ class MqttService {
     
     _alertController.add(testAlert);
     _logger.i('✅ [MQTT] Test alert successfully broadcasted');
+  }
+  
+  // Update MQTT settings
+  Future<void> updateSettings({
+    required String brokerHost,
+    required int brokerPort,
+    required String username,
+    required String password,
+    required String topic,
+  }) async {
+    _logger.i('🔧 [MQTT] Updating MQTT settings...');
+    _logger.i('🔧 [MQTT] - Broker Host: $brokerHost');
+    _logger.i('🔧 [MQTT] - Broker Port: $brokerPort');
+    _logger.i('🔧 [MQTT] - Username: $username');
+    _logger.i('🔧 [MQTT] - Topic: $topic');
+    
+    this.brokerHost = brokerHost;
+    this.brokerPort = brokerPort;
+    this.username = username;
+    this.password = password;
+    this.topic = topic;
+    
+    _logger.i('✅ [MQTT] Settings updated successfully');
   }
 }

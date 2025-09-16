@@ -101,7 +101,7 @@ class _ProcessingPageState extends State<ProcessingPage>
             
             // Status Text
             Obx(() => Text(
-              'Status: ${controller.appState.value.grpcStatus.name}',
+              'Status: ${controller.appState.value.mqttStatus.name}',
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,

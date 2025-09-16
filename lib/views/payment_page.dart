@@ -141,65 +141,6 @@ class PaymentPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Spacer(),
-                // Display text and POS button - Always visible
-                Flexible(
-                  child: Obx(() => Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // PosSubState display
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              controller.posSubState.isNotEmpty ? controller.posSubState : 'N/A',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Display text
-                          Flexible(
-                            child: Text(
-                              controller.displayText.isNotEmpty ? controller.displayText : 'System Ready',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Small POS Cashier button
-                          SizedBox(
-                            height: 24,
-                            child: ElevatedButton(
-                              onPressed: () => controller.navigateToPosCashier(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFFE31E24),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                minimumSize: Size.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                              child: const Text(
-                                'POS',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )),
-                ),
                 const SizedBox(width: 16),
               ],
             ),
@@ -353,41 +294,6 @@ class PaymentPage extends StatelessWidget {
                             ),
                             child: Column(
                               children: [
-                                Obx(() => Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      langController.subtotal,
-                  style: const TextStyle(fontSize: 16),
-                                    ),
-                                    Text(
-                                      langController.formatCurrency(controller.totalAmount),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                )),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      langController.campaignDiscount,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                    Text(
-                                      langController.formatCurrency(0.0),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Divider(height: 20),
                 Obx(() => Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -398,14 +304,14 @@ class PaymentPage extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                                      langController.formatCurrency(controller.totalAmount),
+                    Obx(() => Text(
+                      langController.formatCurrency(controller.totalAmount),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue,
                       ),
-                    ),
+                    )),
                   ],
                 )),
               ],

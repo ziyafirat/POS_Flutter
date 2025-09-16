@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
-import '../models/app_state.dart';
 
 class StartPage extends StatelessWidget {
   const StartPage({super.key});
@@ -72,66 +71,6 @@ class StartPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Spacer(),
-                // Display text and POS button - Always visible
-                Flexible(
-                  child: Obx(() => Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // PosSubState display
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              controller.posSubState.isNotEmpty ? controller.posSubState : 'N/A',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Display text
-                          Flexible(
-                            child: Text(
-                              controller.displayText.isNotEmpty ? controller.displayText : 'System Ready',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Small POS Cashier button
-                          SizedBox(
-                            height: 24,
-                            child: ElevatedButton(
-                              onPressed: () => controller.navigateToPosCashier(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFFE31E24),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                minimumSize: Size.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                              child: const Text(
-                                'POS',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )),
-                ),
-                const SizedBox(width: 16),
               ],
             ),
           ),
@@ -263,7 +202,7 @@ class StartPage extends StatelessWidget {
                     height: 60,
               child: ElevatedButton(
                 onPressed: () {
-                  controller.clearScannedItems(); // Clear any previous items
+                  //controller.clearScannedItems(); // Clear any previous items
                   controller.navigateToItemScan();
                 },
                 style: ElevatedButton.styleFrom(
@@ -293,90 +232,28 @@ class StartPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Secondary buttons row
-                  Row(
-                    children: [
-                      // Language Toggle Button
-                      Expanded(
-                        child: SizedBox(
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              langController.toggleLanguage();
-                            },
-                            icon: const Icon(Icons.language, size: 20),
-                            label: Obx(() => Text(
-                              langController.languageButtonText,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[600],
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 4,
-                            ),
-                ),
-              ),
-            ),
-                      const SizedBox(width: 12),
-                      // Assistant Button
-                      Expanded(
-                        child: SizedBox(
-              height: 50,
-                          child: ElevatedButton.icon(
-                onPressed: () {
-                  controller.navigateToAssistant();
-                },
-                            icon: const Icon(Icons.settings, size: 20),
-                            label: Obx(() => Text(
-                              langController.assistant,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )),
-                style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[600],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                              elevation: 4,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // POS Cashier Button
+                  // Language Toggle Button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        controller.navigateToPosCashier();
+                        langController.toggleLanguage();
                       },
-                      icon: const Icon(Icons.point_of_sale, size: 20),
-                      label: const Text(
-                        'POS Cashier',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                style: ElevatedButton.styleFrom(
+                      icon: const Icon(Icons.language, size: 20),
+                      label: Obx(() => Text(
+                        langController.languageButtonText,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )),
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[600],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         elevation: 4,
                       ),
                     ),

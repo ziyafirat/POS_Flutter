@@ -36,7 +36,7 @@ class ErrorPage extends StatelessWidget {
               
               // Error Title
               const Text(
-                'Something Went Wrong',
+                'Something Went Wrong - Please Contact Support',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -78,29 +78,6 @@ class ErrorPage extends StatelessWidget {
                     Obx(() => Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Column(
-                          children: [
-                            Icon(
-                              controller.appState.value.grpcStatus == ConnectionStatus.connected
-                                  ? Icons.wifi
-                                  : Icons.wifi_off,
-                              color: controller.appState.value.grpcStatus == ConnectionStatus.connected
-                                  ? Colors.green
-                                  : Colors.red,
-                              size: 30,
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              'gRPC',
-                              style: TextStyle(
-                                color: controller.appState.value.grpcStatus == ConnectionStatus.connected
-                                    ? Colors.green
-                                    : Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
                         Column(
                           children: [
                             Icon(
@@ -165,7 +142,7 @@ class ErrorPage extends StatelessWidget {
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        controller.navigateToAssistant();
+                        controller.navigateToPosCashier();
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.blue,
@@ -175,7 +152,7 @@ class ErrorPage extends StatelessWidget {
                         ),
                       ),
                       child: const Text(
-                        'Assistant Mode',
+                        'POS Cashier',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),

@@ -18,8 +18,8 @@ class WebApiService extends GetxController {
   bool _hasReceived1010 = false;
 
   // API Configuration
-  static const String _baseUrl =
-      'http://192.168.3.90:50000/AEFProcess/restaefprocess/aefrun/posService';
+  String _baseUrl =
+      'http://192.168.2.100:50000/AEFProcess/restaefprocess/aefrun/posService';
   static const Duration _loopInterval = Duration(seconds: 1);
 
   // Observable properties
@@ -34,6 +34,7 @@ class WebApiService extends GetxController {
   String get lastError => _lastError.value;
   int get requestCount => _requestCount.value;
   bool get isRunning => _isRunning;
+  String get baseUrl => _baseUrl;
 
   @override
   void onInit() {
@@ -183,13 +184,23 @@ class WebApiService extends GetxController {
       final cleanedResponseBody = _cleanResponseBody(responseBody);
       final responseData = jsonDecode(cleanedResponseBody);
 
-      // Update total amount from BalanceDue
-      if (responseData['BalanceDue'] != null &&
+      // Update total amount from BalanceDue - Process for ANY substate
+      print('🔥 LATEST CODE RUNNING - BalanceDue Check 🔥');
+      if (responseData['BalanceDue'] != null && 
+          responseData['BalanceDue'].toString().isNotEmpty &&
           responseData['BalanceDue'] != 'null') {
-        final balanceDue =
-            double.tryParse(responseData['BalanceDue'].toString()) ?? 0.0;
+        final balanceDueString = responseData['BalanceDue'].toString().trim();
+        final balanceDue = double.tryParse(balanceDueString) ?? 0.0;
+        
+        print('🔥 LATEST CODE: Processing BalanceDue: "$balanceDueString" -> $balanceDue');
+        
+        // Update total amount immediately
         final appController = Get.find<AppController>();
         appController.updateTotalAmount(balanceDue);
+        
+        print('💰 LATEST CODE: Updated total amount: $balanceDue AED');
+      } else {
+        print('🔥 LATEST CODE: BalanceDue not found or empty: ${responseData['BalanceDue']}');
       }
 
       // Process Display field for screen display
@@ -230,10 +241,13 @@ class WebApiService extends GetxController {
   void _handlePosSubStateNavigation(String posSubState) {
     final appController = Get.find<AppController>();
 
-    // Skip automatic navigation if currently in POS Cashier screen
-    if (appController.appState.value.currentScreen == AppScreen.posCashier) {
+    // Skip automatic navigation if currently in POS Cashier, Assistant, or Parameters screen
+    final currentScreen = appController.appState.value.currentScreen;
+    if (currentScreen == AppScreen.posCashier || 
+        currentScreen == AppScreen.assistant || 
+        currentScreen == AppScreen.parameters) {
       _logger.i(
-        'Skipping automatic navigation - currently in POS Cashier screen (PosSubState: $posSubState)',
+        'Skipping automatic navigation - currently in ${currentScreen.toString().split('.').last} screen (PosSubState: $posSubState)',
       );
       return;
     }
@@ -261,9 +275,17 @@ class WebApiService extends GetxController {
         break;
       case '1008':
         _hasReceived1010 = false; // Reset flag when 1008 is received
-        appController.clearScannedItems(); // Clear all items from the list
+        //appController.clearScannedItems(); // Clear all items from the list
         _logger.i('Navigating to start page (PosSubState: $posSubState) - cleared all items');
         appController.navigateToScreen(AppScreen.start);
+        break;
+      case '10356':
+        _logger.i('Navigating to error page (PosSubState: $posSubState)');
+        appController.navigateToScreen(AppScreen.error);
+        break;
+      case '10398':
+        _logger.i('Navigating to error page (PosSubState: $posSubState)');
+        appController.navigateToScreen(AppScreen.error);
         break;
       default:
         _logger.d('Unknown PosSubState: $posSubState');
@@ -462,5 +484,12 @@ class WebApiService extends GetxController {
     } catch (e) {
       _logger.e('One-time API request error: $e');
     }
+  }
+  
+  // Update base URL
+  void updateBaseUrl(String newBaseUrl) {
+    _logger.i('Updating Web API base URL from $_baseUrl to $newBaseUrl');
+    _baseUrl = newBaseUrl;
+    _logger.i('Web API base URL updated successfully');
   }
 }

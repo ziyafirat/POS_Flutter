@@ -4,7 +4,7 @@ class LanguageController extends GetxController {
   static LanguageController get to => Get.find();
   
   // Current language (true = English, false = Arabic)
-  final _isEnglish = false.obs;
+  final _isEnglish = true.obs;
   
   bool get isEnglish => _isEnglish.value;
   

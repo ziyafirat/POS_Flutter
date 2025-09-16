@@ -128,66 +128,6 @@ class ItemScanPage extends StatelessWidget {
                   ],
                 ),
               ),
-                const Spacer(),
-                // Display text and POS button - Always visible
-                Flexible(
-                  child: Obx(() => Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // PosSubState display
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              controller.posSubState.isNotEmpty ? controller.posSubState : 'N/A',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Display text
-                          Flexible(
-                            child: Text(
-                              controller.displayText.isNotEmpty ? controller.displayText : 'System Ready',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Small POS Cashier button
-                          SizedBox(
-                            height: 24,
-                            child: ElevatedButton(
-                              onPressed: () => controller.navigateToPosCashier(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFFE31E24),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                minimumSize: Size.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                              child: const Text(
-                                'POS',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )),
-                ),
-                const SizedBox(width: 16),
               ],
             ),
           ),
@@ -354,16 +294,6 @@ class ItemScanPage extends StatelessWidget {
                               ],
                             ),
                           ),
-                          
-                          // Disclaimer
-                          Obx(() => Text(
-                            langController.discountDisclaimer,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          )),
                         ],
                       ),
                     ),
@@ -386,54 +316,23 @@ class ItemScanPage extends StatelessWidget {
             child: Row(
               children: [
                 // Left side buttons
-                Expanded(
-                  child: Row(
-                    children: [
-                      // Language Button
-                      Expanded(
-                        child: SizedBox(
-                          height: 60,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              langController.toggleLanguage();
-                            },
-                            icon: const Icon(Icons.language, size: 20),
-                            label: Obx(() => Text(
-                              langController.languageButtonText,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            )),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE31E24), // Almaya red
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Right side buttons
                 Row(
                   children: [
-                    // Help Button
+                    // Language Button (smaller)
                     SizedBox(
-                      width: 120,
+                      width: 100,
                       height: 60,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          // Help functionality
+                          langController.toggleLanguage();
                         },
-                        icon: const Icon(Icons.help, size: 20),
+                        icon: const Icon(Icons.language, size: 18),
                         label: Obx(() => Text(
-                          langController.callHelp,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          langController.languageButtonText,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                         )),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: const Color(0xFFE31E24), // Almaya red
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -441,49 +340,77 @@ class ItemScanPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Finish and Pay Button
-                    SizedBox(
-                      width: 180,
-                      height: 60,
-                      child: Obx(() {
-                        final isEmpty = controller.scannedItems.isEmpty;
-                        final totalAmount = controller.totalAmount;
-                        final isButtonEnabled = !isEmpty && totalAmount > 0;
-                        final isProcessing = controller.isProcessingPayment.value;
-                        
-                        return ElevatedButton(
-                          onPressed: (isButtonEnabled && !isProcessing)
-                              ? () => _handleFinishAndPay(controller)
-                              : null,
+                  ],
+                ),
+                const SizedBox(width: 16),
+                // Right side buttons
+                Expanded(
+                  child: Row(
+                    children: [
+                      // Help Button
+                      SizedBox(
+                        width: 120,
+                        height: 60,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // Help functionality
+                          },
+                          icon: const Icon(Icons.help, size: 20),
+                          label: Obx(() => Text(
+                            langController.callHelp,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          )),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isProcessing ? Colors.grey : Colors.green,
+                            backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            elevation: 4,
                           ),
-                          child: isProcessing
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Obx(() => Text(
-                                  langController.finishAndPay,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )),
-                        );
-                      }),
-                    ),
-                  ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Finish and Pay Button (bigger)
+                      Expanded(
+                        child: SizedBox(
+                          height: 60,
+                          child: Obx(() {
+                            final isProcessing = controller.isProcessingPayment.value;
+                            
+                            return ElevatedButton(
+                              onPressed: !isProcessing
+                                  ? () => _handleFinishAndPay(controller)
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isProcessing ? Colors.grey : Colors.green,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 4,
+                              ),
+                              child: isProcessing
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : Obx(() => Text(
+                                      langController.finishAndPay,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )),
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

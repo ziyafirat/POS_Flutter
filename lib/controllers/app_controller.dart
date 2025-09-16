@@ -1,23 +1,19 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import '../models/app_state.dart';
 import '../models/alert_message.dart';
-import '../services/grpc_service.dart';
 import '../services/mqtt_service.dart';
 import '../services/web_api_service.dart';
 import 'language_controller.dart';
 
 class AppController extends GetxController {
   final Logger _logger = Logger();
-  final GrpcService _grpcService = GrpcService();
-  final MqttService _mqttService = MqttService();
+  late final MqttService _mqttService;
 
   // Reactive state
   final Rx<AppState> _appState = AppState(
     currentScreen: AppScreen.start,
-    grpcStatus: ConnectionStatus.disconnected,
     mqttStatus: ConnectionStatus.disconnected,
     isAlertActive: false,
     lastUpdate: DateTime.now(),
@@ -47,6 +43,7 @@ class AppController extends GetxController {
     // Initialize controllers
     Get.put(LanguageController());
     Get.put(WebApiService());
+    _mqttService = Get.find<MqttService>(); // Get the already registered MQTT service
     _initializeServices();
     _setupAlertListener();
   }
@@ -80,8 +77,6 @@ class AppController extends GetxController {
       webApiService.startApiLoop();
       _logger.i('Web API Service started');
 
-      // Set GRPC as disconnected since we're not using it
-      _updateGrpcStatus(ConnectionStatus.disconnected);
     } catch (e) {
       _logger.e('Service initialization failed: $e');
       _navigateToScreen(AppScreen.error, errorMessage: e.toString());
@@ -94,23 +89,29 @@ class AppController extends GetxController {
       _currentAlert.value = alert;
       _updateAppState(isAlertActive: true);
       
-      // Navigate to alert screen if not already there
-      if (_appState.value.currentScreen != AppScreen.alert) {
-        _navigateToScreen(AppScreen.alert);
+      // Navigate to appropriate alert screen based on alert type
+      if (alert.type == AlertType.fraud) {
+        // For fraud alerts, navigate to fraud alert page
+        if (_appState.value.currentScreen != AppScreen.fraudAlert) {
+          _navigateToScreen(AppScreen.fraudAlert);
+        }
+      } else {
+        // For other alerts, navigate to regular alert page
+        if (_appState.value.currentScreen != AppScreen.alert) {
+          _navigateToScreen(AppScreen.alert);
+        }
       }
     });
   }
 
   void _updateAppState({
     AppScreen? currentScreen,
-    ConnectionStatus? grpcStatus,
     ConnectionStatus? mqttStatus,
     bool? isAlertActive,
     String? errorMessage,
   }) {
     final newState = _appState.value.copyWith(
       currentScreen: currentScreen ?? _appState.value.currentScreen,
-      grpcStatus: grpcStatus ?? _appState.value.grpcStatus,
       mqttStatus: mqttStatus ?? _appState.value.mqttStatus,
       isAlertActive: isAlertActive ?? _appState.value.isAlertActive,
       errorMessage: errorMessage ?? _appState.value.errorMessage,
@@ -120,9 +121,6 @@ class AppController extends GetxController {
     _appState.refresh();
   }
 
-  void _updateGrpcStatus(ConnectionStatus status) {
-    _updateAppState(grpcStatus: status);
-  }
 
   void _updateMqttStatus(ConnectionStatus status) {
     _updateAppState(mqttStatus: status);
@@ -130,6 +128,15 @@ class AppController extends GetxController {
 
   void _navigateToScreen(AppScreen screen, {String? errorMessage}) {
     _logger.i('_navigateToScreen called with screen: $screen');
+    
+    // Check if fraud alert is active - if so, don't navigate unless it's dismissing the alert
+    if (isAlertActive && _currentAlert.value?.type == AlertType.fraud) {
+      if (screen != AppScreen.fraudAlert) {
+        _logger.w('Cannot navigate to $screen - fraud alert is active and must be dismissed first');
+        return;
+      }
+    }
+    
     _updateAppState(
       currentScreen: screen,
       errorMessage: errorMessage,
@@ -197,6 +204,14 @@ class AppController extends GetxController {
     _navigateToScreen(AppScreen.posCashier);
   }
 
+  void navigateToParameters() {
+    if (isAlertActive) {
+      _logger.w('Cannot navigate to parameters - alert is active');
+      return;
+    }
+    _navigateToScreen(AppScreen.parameters);
+  }
+
   // Item management
   void addScannedItem(String item) {
     _scannedItems.add(item);
@@ -205,14 +220,16 @@ class AppController extends GetxController {
 
   void clearScannedItems() {
     _scannedItems.clear();
-    _logger.i('Cleared scanned items');
+    _totalAmount.value = 0.0; // Reset total amount for new customer
+    _logger.i('Cleared scanned items and reset total amount');
   }
 
   void removeScannedItem(int index) {
     if (index >= 0 && index < _scannedItems.length) {
+      final removedItem = _scannedItems[index];
       _scannedItems.removeAt(index);
-      _totalAmount.value -= 10.0; // Mock price
-      _logger.i('Removed item at index $index, Total: ${_totalAmount.value}');
+      _logger.i('Removed item at index $index: $removedItem');
+      // Note: Total amount will be updated from API BalanceDue response
     }
   }
 
@@ -246,127 +263,34 @@ class AppController extends GetxController {
   }
 
   // Assistant methods
-  Future<void> testGrpcConnection() async {
-    final success = await _grpcService.testConnection();
-    _logger.i('gRPC test connection: $success');
-  }
 
   Future<void> testMqttConnection() async {
     final success = await _mqttService.testConnection();
     _logger.i('MQTT test connection: $success');
   }
 
-  Future<void> runGrpcHappyTestScenario() async {
-    _logger.i('🚀 Starting comprehensive gRPC happy test scenario...');
-    final results = await _grpcService.runHappyTestScenario();
-    
-    final passedTests = results.values.where((result) => result).length;
-    final totalTests = results.length;
-    
-    // Log the results instead of showing snackbar to avoid overlay issues
-    if (passedTests == totalTests) {
-      _logger.i('🎉 All Tests Passed! gRPC happy test scenario completed successfully ($passedTests/$totalTests)');
-    } else {
-      _logger.w('⚠️ Some Tests Failed: gRPC happy test scenario: $passedTests/$totalTests tests passed');
-    }
-    
-    // Try to show snackbar safely
-    try {
-      if (Get.context != null) {
-        if (passedTests == totalTests) {
-          Get.snackbar(
-            '🎉 All Tests Passed!',
-            'gRPC happy test scenario completed successfully ($passedTests/$totalTests)',
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 5),
-          );
-        } else {
-          Get.snackbar(
-            '⚠️ Some Tests Failed',
-            'gRPC happy test scenario: $passedTests/$totalTests tests passed',
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 5),
-          );
-        }
-      }
-    } catch (e) {
-      _logger.w('Could not show snackbar: $e');
-    }
-  }
 
-  Future<void> runGrpcQuickHealthCheck() async {
-    _logger.i('⚡ Running gRPC quick health check...');
-    final isHealthy = await _grpcService.quickHealthCheck();
-    
-    // Log the results instead of showing snackbar to avoid overlay issues
-    if (isHealthy) {
-      _logger.i('✅ Health Check Passed: gRPC service is healthy and responsive');
-    } else {
-      _logger.w('❌ Health Check Failed: gRPC service health check failed');
-    }
-    
-    // Try to show snackbar safely
-    try {
-      if (Get.context != null) {
-        if (isHealthy) {
-          Get.snackbar(
-            '✅ Health Check Passed',
-            'gRPC service is healthy and responsive',
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
-        } else {
-          Get.snackbar(
-            '❌ Health Check Failed',
-            'gRPC service health check failed',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
-        }
-      }
-    } catch (e) {
-      _logger.w('Could not show snackbar: $e');
-    }
-  }
 
-  Future<void> testServerRunning() async {
-    _logger.i('🔍 Testing if server is running...');
-    final isRunning = await _grpcService.isServerRunning();
-    
-    if (isRunning) {
-      _logger.i('✅ Server is running at localhost:50051');
-    } else {
-      _logger.e('❌ Server is not running or not reachable at localhost:50051');
-    }
-    
-    // Try to show snackbar safely
-    try {
-      if (Get.context != null) {
-        if (isRunning) {
-          Get.snackbar(
-            '✅ Server Running',
-            'gRPC server is running at localhost:50051',
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-          );
-        } else {
-          Get.snackbar(
-            '❌ Server Not Running',
-            'gRPC server is not running at localhost:50051',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
-        }
-      }
-    } catch (e) {
-      _logger.w('Could not show snackbar: $e');
-    }
-  }
 
   void simulateAlert() {
     _mqttService.simulateAlert();
+  }
+
+  void simulateFraudAlert() {
+    _logger.i('Simulating fraud alert...');
+    final fraudAlert = AlertMessage(
+      id: 'FRAUD_${DateTime.now().millisecondsSinceEpoch}',
+      title: 'Fraud Alert',
+      message: 'Suspicious activity detected at checkout station. Please investigate immediately.',
+      type: AlertType.fraud,
+      videoUrl: 'https://example.com/fraud_alert.gif',
+      timestamp: DateTime.now(),
+      isActive: true,
+    );
+    
+    _currentAlert.value = fraudAlert;
+    _updateAppState(isAlertActive: true);
+    _navigateToScreen(AppScreen.fraudAlert);
   }
   
   // Public navigation method
@@ -376,8 +300,9 @@ class AppController extends GetxController {
   
   // Update total amount method
   void updateTotalAmount(double amount) {
+    print('🔥 LATEST CODE: AppController.updateTotalAmount called with: $amount');
     _totalAmount.value = amount;
-    _logger.d('Updated total amount: $amount');
+    print('✅ LATEST CODE: Total amount RxDouble updated to: ${_totalAmount.value} AED');
   }
   
   // Display text for API Display field
@@ -402,5 +327,11 @@ class AppController extends GetxController {
   void setProcessingPayment(bool isProcessing) {
     _isProcessingPayment.value = isProcessing;
     _logger.d('Set processing payment: $isProcessing');
+  }
+  
+  // Update terminal ID
+  void updateTerminalId(String terminalId) {
+    _terminalId.value = terminalId;
+    _logger.d('Updated terminal ID: $terminalId');
   }
 }

@@ -10,8 +10,10 @@ enum AppScreen {
   printing,
   error,
   alert,
+  fraudAlert,
   assistant,
   posCashier,
+  parameters,
 }
 
 enum ConnectionStatus {
@@ -24,7 +26,6 @@ enum ConnectionStatus {
 @JsonSerializable()
 class AppState {
   final AppScreen currentScreen;
-  final ConnectionStatus grpcStatus;
   final ConnectionStatus mqttStatus;
   final bool isAlertActive;
   final String? errorMessage;
@@ -32,7 +33,6 @@ class AppState {
 
   const AppState({
     required this.currentScreen,
-    required this.grpcStatus,
     required this.mqttStatus,
     required this.isAlertActive,
     this.errorMessage,
@@ -46,7 +46,6 @@ class AppState {
 
   AppState copyWith({
     AppScreen? currentScreen,
-    ConnectionStatus? grpcStatus,
     ConnectionStatus? mqttStatus,
     bool? isAlertActive,
     String? errorMessage,
@@ -54,7 +53,6 @@ class AppState {
   }) {
     return AppState(
       currentScreen: currentScreen ?? this.currentScreen,
-      grpcStatus: grpcStatus ?? this.grpcStatus,
       mqttStatus: mqttStatus ?? this.mqttStatus,
       isAlertActive: isAlertActive ?? this.isAlertActive,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -62,6 +60,6 @@ class AppState {
     );
   }
 
-  bool get isConnected => grpcStatus == ConnectionStatus.connected;
+  bool get isConnected => mqttStatus == ConnectionStatus.connected;
   bool get hasActiveAlert => isAlertActive;
 }

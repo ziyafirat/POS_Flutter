@@ -8,10 +8,15 @@ import 'views/processing_page.dart';
 import 'views/printing_page.dart';
 import 'views/error_page.dart';
 import 'views/alert_page.dart';
+import 'views/fraud_alert_page.dart';
 import 'views/assistant_page.dart';
 import 'views/pos_cashier_page.dart';
+import 'views/parameters_page.dart';
+import 'widgets/mqtt_status_bar.dart';
+import 'widgets/fraud_alert_popup.dart';
 import 'models/app_state.dart';
 import 'services/usb_printer_service.dart';
+import 'services/mqtt_service.dart';
 
 void main() {
   runApp(const SelfCheckoutApp());
@@ -43,26 +48,59 @@ class MainNavigationWrapper extends StatelessWidget {
     final AppController controller = Get.find<AppController>();
     
     return Obx(() {
+      Widget currentPage;
+      
       switch (controller.appState.value.currentScreen) {
         case AppScreen.start:
-          return const StartPage();
+          currentPage = const StartPage();
+          break;
         case AppScreen.itemScan:
-          return const ItemScanPage();
+          currentPage = const ItemScanPage();
+          break;
         case AppScreen.payment:
-          return const PaymentPage();
+          currentPage = const PaymentPage();
+          break;
         case AppScreen.processing:
-          return const ProcessingPage();
+          currentPage = const ProcessingPage();
+          break;
         case AppScreen.printing:
-          return const PrintingPage();
+          currentPage = const PrintingPage();
+          break;
         case AppScreen.error:
-          return const ErrorPage();
+          currentPage = const ErrorPage();
+          break;
         case AppScreen.alert:
-          return const AlertPage();
+          currentPage = const AlertPage();
+          break;
+        case AppScreen.fraudAlert:
+          currentPage = const FraudAlertPage();
+          break;
         case AppScreen.assistant:
-          return const AssistantPage();
+          currentPage = const AssistantPage();
+          break;
         case AppScreen.posCashier:
-          return const PosCashierPage();
+          currentPage = const PosCashierPage();
+          break;
+        case AppScreen.parameters:
+          currentPage = const ParametersPage();
+          break;
       }
+
+      return Stack(
+        children: [
+          // Main content with status bar
+          Column(
+            children: [
+              // MQTT Status Bar
+              const MqttStatusBar(),
+              // Main content
+              Expanded(child: currentPage),
+            ],
+          ),
+          // Fraud alert popup overlay
+          const FraudAlertPopup(),
+        ],
+      );
     });
   }
 }
@@ -70,6 +108,7 @@ class MainNavigationWrapper extends StatelessWidget {
 class AppBinding extends Bindings {
   @override
   void dependencies() {
+    Get.put(MqttService()); // Register MQTT service first
     Get.put(AppController());
     Get.put(UsbPrinterService());
     // NavigationController removed - navigation is handled by MainNavigationWrapper

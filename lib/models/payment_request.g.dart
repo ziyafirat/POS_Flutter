@@ -11,8 +11,9 @@ PaymentRequest _$PaymentRequestFromJson(Map<String, dynamic> json) =>
       orderId: json['orderId'] as String,
       totalAmount: (json['totalAmount'] as num).toDouble(),
       paymentMethod: $enumDecode(_$PaymentMethodEnumMap, json['paymentMethod']),
-      itemIds:
-          (json['itemIds'] as List<dynamic>).map((e) => e as String).toList(),
+      itemIds: (json['itemIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$PaymentRequestToJson(PaymentRequest instance) =>

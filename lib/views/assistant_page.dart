@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../models/app_state.dart';
+import '../test/mqtt_test_widget.dart';
 
 class AssistantPage extends StatelessWidget {
   const AssistantPage({super.key});
@@ -48,17 +49,6 @@ class AssistantPage extends StatelessWidget {
                   Obx(() => Row(
                     children: [
                       Icon(
-                        controller.appState.value.grpcStatus == ConnectionStatus.connected
-                            ? Icons.wifi
-                            : Icons.wifi_off,
-                        color: controller.appState.value.grpcStatus == ConnectionStatus.connected
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                      const SizedBox(width: 8),
-                      Text('gRPC: ${controller.appState.value.grpcStatus.name}'),
-                      const SizedBox(width: 20),
-                      Icon(
                         controller.appState.value.mqttStatus == ConnectionStatus.connected
                             ? Icons.cloud_done
                             : Icons.cloud_off,
@@ -93,34 +83,16 @@ class AssistantPage extends StatelessWidget {
                 childAspectRatio: 1.1,
                 children: [
                   _buildTestButton(
-                    'Test gRPC Connection',
-                    Icons.wifi,
-                    Colors.blue,
-                    () => controller.testGrpcConnection(),
-                  ),
-                  _buildTestButton(
                     'Test MQTT Connection',
                     Icons.cloud,
                     Colors.green,
                     () => controller.testMqttConnection(),
                   ),
                   _buildTestButton(
-                    'gRPC Happy Test',
-                    Icons.rocket_launch,
-                    Colors.purple,
-                    () => controller.runGrpcHappyTestScenario(),
-                  ),
-                  _buildTestButton(
-                    'gRPC Health Check',
-                    Icons.health_and_safety,
-                    Colors.teal,
-                    () => controller.runGrpcQuickHealthCheck(),
-                  ),
-                  _buildTestButton(
-                    'Check Server',
-                    Icons.dns,
-                    Colors.cyan,
-                    () => controller.testServerRunning(),
+                    'MQTT Test Screen',
+                    Icons.science,
+                    Colors.deepOrange,
+                    () => _openMqttTestScreen(context),
                   ),
                   _buildTestButton(
                     'Test Payment',
@@ -140,6 +112,12 @@ class AssistantPage extends StatelessWidget {
                     Icons.warning,
                     Colors.red,
                     () => controller.simulateAlert(),
+                  ),
+                  _buildTestButton(
+                    'Simulate Fraud Alert',
+                    Icons.security,
+                    Colors.red[800]!,
+                    () => controller.simulateFraudAlert(),
                   ),
                   _buildTestButton(
                     'Add Test Item',
@@ -281,6 +259,14 @@ class AssistantPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openMqttTestScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const MqttTestWidget(),
       ),
     );
   }
