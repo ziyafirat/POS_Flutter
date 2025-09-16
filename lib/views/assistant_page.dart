@@ -17,9 +17,21 @@ class AssistantPage extends StatelessWidget {
     final ScannerService scannerService = Get.find<ScannerService>();
     final UsbPrinterService printerService = Get.find<UsbPrinterService>();
     
-    // Use Get.find() since controllers are registered in AppBinding
-    final LampController lampController = Get.find<LampController>();
-    final NiVm eftService = Get.find<NiVm>();
+    // Initialize controllers safely to avoid overlay issues
+    LampController? lampController;
+    NiVm? eftService;
+    
+    try {
+      lampController = Get.isRegistered<LampController>() 
+          ? Get.find<LampController>() 
+          : Get.put(LampController(), permanent: true);
+      eftService = Get.isRegistered<NiVm>() 
+          ? Get.find<NiVm>() 
+          : Get.put(NiVm(), permanent: true);
+    } catch (e) {
+      // Fallback if controllers can't be initialized
+      print('Controller initialization error: $e');
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -106,20 +118,20 @@ class AssistantPage extends StatelessWidget {
                     ],
                   )),
                   const SizedBox(height: 10),
-                  Obx(() => Row(
+                  Row(
                     children: [
                       Icon(
-                        eftService.channelOpen
+                        eftService?.channelOpen == true
                             ? Icons.credit_card
                             : Icons.credit_card_off,
-                        color: eftService.channelOpen
+                        color: eftService?.channelOpen == true
                             ? Colors.green
                             : Colors.grey,
                       ),
                       const SizedBox(width: 8),
-                      Text('EFT: ${eftService.channelOpen ? "Connected" : "Disconnected"}'),
+                      Text('EFT: ${eftService?.channelOpen == true ? "Connected" : "Disconnected"}'),
                     ],
-                  )),
+                  ),
                 ],
               ),
             ),
@@ -325,13 +337,22 @@ class AssistantPage extends StatelessWidget {
                     Colors.red,
                     () async {
                       try {
-                        await lampController.activateColor(LampColor.red);
-                        Get.snackbar(
-                          'Lamp Test',
-                          'Red lamp activated',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
+                        if (lampController != null) {
+                          await lampController.activateColor(LampColor.red);
+                          Get.snackbar(
+                            'Lamp Test',
+                            'Red lamp activated',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Lamp Error',
+                            'Lamp controller not available',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
                       } catch (e) {
                         Get.snackbar(
                           'Lamp Error',
@@ -348,13 +369,22 @@ class AssistantPage extends StatelessWidget {
                     Colors.green,
                     () async {
                       try {
-                        await lampController.activateColor(LampColor.green);
-                        Get.snackbar(
-                          'Lamp Test',
-                          'Green lamp activated',
-                          backgroundColor: Colors.green,
-                          colorText: Colors.white,
-                        );
+                        if (lampController != null) {
+                          await lampController.activateColor(LampColor.green);
+                          Get.snackbar(
+                            'Lamp Test',
+                            'Green lamp activated',
+                            backgroundColor: Colors.green,
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Lamp Error',
+                            'Lamp controller not available',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
                       } catch (e) {
                         Get.snackbar(
                           'Lamp Error',
@@ -371,13 +401,22 @@ class AssistantPage extends StatelessWidget {
                     Colors.blue,
                     () async {
                       try {
-                        await lampController.activateColor(LampColor.blue);
-                        Get.snackbar(
-                          'Lamp Test',
-                          'Blue lamp activated',
-                          backgroundColor: Colors.blue,
-                          colorText: Colors.white,
-                        );
+                        if (lampController != null) {
+                          await lampController.activateColor(LampColor.blue);
+                          Get.snackbar(
+                            'Lamp Test',
+                            'Blue lamp activated',
+                            backgroundColor: Colors.blue,
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Lamp Error',
+                            'Lamp controller not available',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
                       } catch (e) {
                         Get.snackbar(
                           'Lamp Error',
@@ -394,13 +433,22 @@ class AssistantPage extends StatelessWidget {
                     Colors.grey,
                     () async {
                       try {
-                        await lampController.activateColor(LampColor.off);
-                        Get.snackbar(
-                          'Lamp Test',
-                          'Lamp turned off',
-                          backgroundColor: Colors.grey,
-                          colorText: Colors.white,
-                        );
+                        if (lampController != null) {
+                          await lampController.activateColor(LampColor.off);
+                          Get.snackbar(
+                            'Lamp Test',
+                            'Lamp turned off',
+                            backgroundColor: Colors.grey,
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Lamp Error',
+                            'Lamp controller not available',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
                       } catch (e) {
                         Get.snackbar(
                           'Lamp Error',
@@ -421,18 +469,41 @@ class AssistantPage extends StatelessWidget {
                         const testMessage = 'startTransaction {"sourceid":"7258f2eb-dbc2-a888-342243","amount":"1000","success":false,"type":"eposSale"}';
                         
                         // Send the formatted message to EFT service
-                        final response = await eftService.sendToAndroidPas(testMessage);
-                        
-                        Get.snackbar(
-                          'EFT Test',
-                          'Test transaction sent: ${response?.displayText ?? "No response"}',
-                          backgroundColor: response?.resultCode == '00' ? Colors.green : Colors.orange,
-                          colorText: Colors.white,
-                        );
+                        if (eftService != null) {
+                          // First try to connect to EFT server
+                          print('🏦 EFT DEBUG: Testing connection to ${NiVm.address}:${NiVm.port}');
+                          final connected = await eftService.connectToAndroidPas();
+                          
+                          if (connected) {
+                            print('🏦 EFT DEBUG: Sending test message: $testMessage');
+                            final response = await eftService.sendToAndroidPas(testMessage);
+                            Get.snackbar(
+                              'EFT Test',
+                              'Test transaction sent: ${response?.displayText ?? "No response"}',
+                              backgroundColor: response?.resultCode == '00' ? Colors.green : Colors.orange,
+                              colorText: Colors.white,
+                            );
+                          } else {
+                            Get.snackbar(
+                              'EFT Connection',
+                              'Failed to connect to EFT server at ${NiVm.address}:${NiVm.port}',
+                              backgroundColor: Colors.orange,
+                              colorText: Colors.white,
+                            );
+                          }
+                        } else {
+                          Get.snackbar(
+                            'EFT Error',
+                            'EFT service not available',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
                       } catch (e) {
+                        print('🏦 EFT DEBUG: Error - $e');
                         Get.snackbar(
                           'EFT Error',
-                          'EFT test failed: $e',
+                          'EFT test failed: Check if EFT server is running on ${NiVm.address}:${NiVm.port}',
                           backgroundColor: Colors.red,
                           colorText: Colors.white,
                         );

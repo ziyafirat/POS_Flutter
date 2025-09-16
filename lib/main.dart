@@ -18,8 +18,8 @@ import 'widgets/fraud_alert_popup.dart';
 import 'models/app_state.dart';
 import 'services/usb_printer_service.dart';
 import 'services/mqtt_service.dart';
-import 'services/lamp.dart';
-import 'services/eft.dart';
+// import 'services/lamp.dart';
+// import 'services/eft.dart';
 
 void main() {
   runApp(const SelfCheckoutApp());
@@ -119,8 +119,7 @@ class AppBinding extends Bindings {
     Get.put(MqttService()); // Register MQTT service first
     Get.put(AppController());
     Get.put(UsbPrinterService());
-    Get.lazyPut<LampController>(() => LampController()); // Lazy register Lamp controller
-    Get.lazyPut<NiVm>(() => NiVm()); // Lazy register EFT service
+    // Lamp and EFT services will be initialized when first accessed
     // NavigationController removed - navigation is handled by MainNavigationWrapper
   }
 }
