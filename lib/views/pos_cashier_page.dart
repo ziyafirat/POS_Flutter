@@ -167,11 +167,6 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle, size: 24),
-                                  onPressed: () => controller.removeScannedItem(index),
-                                  color: Colors.red[600],
-                                ),
                               ],
                             ),
                           );

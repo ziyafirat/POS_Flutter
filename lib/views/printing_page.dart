@@ -60,7 +60,6 @@ class _PrintingPageState extends State<PrintingPage>
     // Check if PosSubState is 1008
     if (controller.posSubState == '1008') {
       // Clear items when PosSubState is 1008
-      //controller.clearScannedItems();
       // Navigate to start page when PosSubState is 1008
       controller.navigateToStart();
       return;

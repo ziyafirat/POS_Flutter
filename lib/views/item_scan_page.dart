@@ -258,10 +258,6 @@ class ItemScanPage extends StatelessWidget {
                                             color: Colors.blue[700],
                                           ),
                                         ),
-                                        IconButton(
-                                          icon: const Icon(Icons.remove_circle, size: 20),
-                                          onPressed: () => controller.removeScannedItem(index),
-                                        ),
                                       ],
                                     ),
                                   );

@@ -139,7 +139,6 @@ class AssistantPage extends StatelessWidget {
                     Icons.clear_all,
                     Colors.grey,
                     () {
-                      controller.clearScannedItems();
                       Get.snackbar(
                         'Success',
                         'All items cleared',
@@ -173,7 +172,6 @@ class AssistantPage extends StatelessWidget {
                     Icons.refresh,
                     Colors.amber,
                     () {
-                      controller.clearScannedItems();
                       controller.dismissAlert();
                       controller.navigateToStart();
                       Get.snackbar(

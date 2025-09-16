@@ -218,20 +218,13 @@ class AppController extends GetxController {
     _logger.i('Added scanned item: $item');
   }
 
-  void clearScannedItems() {
+  void setScannedItems(List<String> items) {
     _scannedItems.clear();
-    _totalAmount.value = 0.0; // Reset total amount for new customer
-    _logger.i('Cleared scanned items and reset total amount');
+    _scannedItems.addAll(items);
+    _logger.i('Set scanned items list with ${items.length} items');
   }
 
-  void removeScannedItem(int index) {
-    if (index >= 0 && index < _scannedItems.length) {
-      final removedItem = _scannedItems[index];
-      _scannedItems.removeAt(index);
-      _logger.i('Removed item at index $index: $removedItem');
-      // Note: Total amount will be updated from API BalanceDue response
-    }
-  }
+
 
   // Alert management
   void dismissAlert() {

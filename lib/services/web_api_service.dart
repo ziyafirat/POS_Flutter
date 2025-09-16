@@ -275,8 +275,7 @@ class WebApiService extends GetxController {
         break;
       case '1008':
         _hasReceived1010 = false; // Reset flag when 1008 is received
-        //appController.clearScannedItems(); // Clear all items from the list
-        _logger.i('Navigating to start page (PosSubState: $posSubState) - cleared all items');
+        _logger.i('Navigating to start page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.start);
         break;
       case '10356':
@@ -335,8 +334,8 @@ class WebApiService extends GetxController {
 
       final appController = Get.find<AppController>();
 
-      // Clear existing items and add new ones
-      appController.clearScannedItems();
+      // Process all items from API response and replace the current list
+      final List<String> processedItems = [];
 
       for (final item in decodedItems) {
         if (item.trim().isNotEmpty) {
@@ -366,13 +365,16 @@ class WebApiService extends GetxController {
                 ? '$engName ($araName)'
                 : engName;
             final itemString = '$barcode:$displayName:$uom:$price:$qty:$vr';
-            _logger.d('Adding item: $itemString');
-            appController.addScannedItem(itemString);
+            _logger.d('Processing item: $itemString');
+            processedItems.add(itemString);
           } else {
             _logger.w('Item has insufficient parts (${parts.length}): $item');
           }
         }
       }
+
+      // Replace the entire scanned items list with the current API response
+      appController.setScannedItems(processedItems);
 
       _logger.i('Processed ${decodedItems.length} items from ItemLine');
     } catch (e) {

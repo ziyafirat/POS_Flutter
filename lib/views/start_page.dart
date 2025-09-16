@@ -202,7 +202,6 @@ class StartPage extends StatelessWidget {
                     height: 60,
               child: ElevatedButton(
                 onPressed: () {
-                  //controller.clearScannedItems(); // Clear any previous items
                   controller.navigateToItemScan();
                 },
                 style: ElevatedButton.styleFrom(
