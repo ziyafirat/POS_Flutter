@@ -98,13 +98,16 @@ class TxnMessage {
 class NiVm extends GetxController {
   static const String address = '127.0.0.1';
   static const int port = 8085;
-  static Socket? _socket;
+  Socket? _socket;
 
-  static Stream<Uint8List>? _socketStream;
-  static bool channelOpen = false;
-  var logs = <TxnMessage?>[].obs;
-  var message = "".obs;
-  var isConnecting = false.obs;
+  Stream<Uint8List>? _socketStream;
+  final RxBool _channelOpen = false.obs;
+  final RxList<TxnMessage?> logs = <TxnMessage?>[].obs;
+  final RxString message = "".obs;
+  final RxBool isConnecting = false.obs;
+
+  // Getter for channelOpen
+  bool get channelOpen => _channelOpen.value;
 
   bool onTranscation = false;
   Completer<String?> completer = Completer<String?>();
@@ -112,7 +115,7 @@ class NiVm extends GetxController {
   StreamSubscription? subscription;
 
   Future<bool> connectToAndroidPas() async {
-    if (_socket == null || !channelOpen) {
+    if (_socket == null || !_channelOpen.value) {
       isConnecting.value = true;
       logs.add(
         const TxnMessage(displayText: "Attempting to connect to EFT Machine"),
@@ -124,7 +127,7 @@ class NiVm extends GetxController {
           port,
         ).timeout(const Duration(seconds: 5));
         _socketStream = _socket!.asBroadcastStream();
-        channelOpen = true;
+        _channelOpen.value = true;
         logWrite("Connected to EFT Machine");
         logs.add(const TxnMessage(displayText: "Connected to EFT Machine"));
         isConnecting.value = false;
@@ -374,8 +377,8 @@ class NiVm extends GetxController {
   // Missing ErrorMessage property
   static String get ErrorMessage => "EFT Error occurred";
 
-  static void resetConnection() {
-    channelOpen = false;
+  void resetConnection() {
+    _channelOpen.value = false;
     _socket?.destroy();
     _socket = null;
   }

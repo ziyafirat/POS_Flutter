@@ -16,8 +16,10 @@ class AssistantPage extends StatelessWidget {
     final AppController controller = Get.find<AppController>();
     final ScannerService scannerService = Get.find<ScannerService>();
     final UsbPrinterService printerService = Get.find<UsbPrinterService>();
-    final LampController lampController = Get.put(LampController());
-    final NiVm eftService = Get.put(NiVm());
+    
+    // Use Get.find() since controllers are registered in AppBinding
+    final LampController lampController = Get.find<LampController>();
+    final NiVm eftService = Get.find<NiVm>();
 
     return Scaffold(
       appBar: AppBar(
@@ -107,15 +109,15 @@ class AssistantPage extends StatelessWidget {
                   Obx(() => Row(
                     children: [
                       Icon(
-                        NiVm.channelOpen
+                        eftService.channelOpen
                             ? Icons.credit_card
                             : Icons.credit_card_off,
-                        color: NiVm.channelOpen
+                        color: eftService.channelOpen
                             ? Colors.green
                             : Colors.grey,
                       ),
                       const SizedBox(width: 8),
-                      Text('EFT: ${NiVm.channelOpen ? "Connected" : "Disconnected"}'),
+                      Text('EFT: ${eftService.channelOpen ? "Connected" : "Disconnected"}'),
                     ],
                   )),
                 ],
