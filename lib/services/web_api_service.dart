@@ -261,22 +261,37 @@ class WebApiService extends GetxController {
           );
           return;
         }
+        // Clear user-initiated navigation flag when system takes control
+        appController.clearUserInitiatedNavigation();
         _logger.i('Navigating to item scan page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.itemScan);
         break;
       case '1010':
         _hasReceived1010 = true; // Set flag when 1010 is received
+        // Clear user-initiated navigation flag when system takes control
+        appController.clearUserInitiatedNavigation();
         _logger.i('Navigating to payment page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.payment);
         break;
       case '1001':
+        // Clear user-initiated navigation flag when system takes control
+        appController.clearUserInitiatedNavigation();
         _logger.i('Navigating to start page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.itemScan);
         break;
       case '1008':
         _hasReceived1010 = false; // Reset flag when 1008 is received
-        _logger.i('Navigating to start page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.start);
+        
+        // Check if user manually navigated to item scan page
+        if (appController.userInitiatedNavigation && 
+            appController.appState.value.currentScreen == AppScreen.itemScan) {
+          _logger.i('PosSubState 1008 - User is in item scan page, staying on item scan (user-initiated navigation)');
+          // Clear the flag after some time or on next different substate
+          // Don't navigate away from item scan page
+        } else {
+          _logger.i('Navigating to start page (PosSubState: $posSubState)');
+          appController.navigateToScreen(AppScreen.start);
+        }
         break;
       case '10356':
         _logger.i('Navigating to error page (PosSubState: $posSubState)');

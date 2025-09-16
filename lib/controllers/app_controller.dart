@@ -26,6 +26,7 @@ class AppController extends GetxController {
   final RxDouble _totalAmount = 0.0.obs;
   final RxString _terminalId = '500'.obs;
   final RxBool _isProcessingPayment = false.obs;
+  final RxBool _userInitiatedNavigation = false.obs;
 
   // Getters
   Rx<AppState> get appState => _appState;
@@ -35,6 +36,7 @@ class AppController extends GetxController {
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
   String? get terminalId => _terminalId.value;
   RxBool get isProcessingPayment => _isProcessingPayment;
+  bool get userInitiatedNavigation => _userInitiatedNavigation.value;
 
   // Stream subscriptions
   StreamSubscription<AlertMessage>? _alertSubscription;
@@ -210,7 +212,8 @@ class AppController extends GetxController {
       _logger.w('Cannot navigate to item scan - alert is active');
       return;
     }
-    _logger.i('Calling _navigateToScreen with AppScreen.itemScan');
+    _logger.i('Calling _navigateToScreen with AppScreen.itemScan (user-initiated)');
+    _userInitiatedNavigation.value = true;
     _navigateToScreen(AppScreen.itemScan);
   }
 
@@ -374,6 +377,11 @@ class AppController extends GetxController {
   void setProcessingPayment(bool isProcessing) {
     _isProcessingPayment.value = isProcessing;
     _logger.d('Set processing payment: $isProcessing');
+  }
+
+  void clearUserInitiatedNavigation() {
+    _userInitiatedNavigation.value = false;
+    _logger.d('Cleared user-initiated navigation flag');
   }
   
   // Update terminal ID

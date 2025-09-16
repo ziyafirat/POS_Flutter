@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../services/scanner_service.dart';
+import '../services/usb_printer_service.dart';
 import '../models/app_state.dart';
 import '../test/mqtt_test_widget.dart';
 
@@ -12,6 +13,7 @@ class AssistantPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
     final ScannerService scannerService = Get.find<ScannerService>();
+    final UsbPrinterService printerService = Get.find<UsbPrinterService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -82,6 +84,21 @@ class AssistantPage extends StatelessWidget {
                     'Scans: ${scannerService.scanCount} | Last: ${scannerService.lastScannedCode.isEmpty ? "None" : scannerService.lastScannedCode}',
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   )),
+                  const SizedBox(height: 10),
+                  Obx(() => Row(
+                    children: [
+                      Icon(
+                        printerService.isConnected
+                            ? Icons.print
+                            : Icons.print_disabled,
+                        color: printerService.isConnected
+                            ? Colors.green
+                            : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text('Printer: ${printerService.printerStatus}'),
+                    ],
+                  )),
                 ],
               ),
             ),
@@ -99,10 +116,10 @@ class AssistantPage extends StatelessWidget {
             
             Expanded(
               child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.1,
+                crossAxisCount: 10,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.8,
                 children: [
                   _buildTestButton(
                     'Test MQTT Connection',
@@ -256,6 +273,31 @@ class AssistantPage extends StatelessWidget {
                       }
                     },
                   )),
+                  _buildTestButton(
+                    'Test Printer',
+                    Icons.print,
+                    Colors.orange,
+                    () async {
+                      try {
+                        final success = await printerService.testPrint();
+                        Get.snackbar(
+                          'Printer Test',
+                          success 
+                            ? 'Test print sent successfully!'
+                            : 'Test print failed - check printer connection',
+                          backgroundColor: success ? Colors.green : Colors.red,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'Printer Error',
+                          'Test print failed: $e',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -300,37 +342,36 @@ class AssistantPage extends StatelessWidget {
     Color color,
     VoidCallback onPressed,
   ) {
-    return SizedBox(
-      height: 50,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          elevation: 8,
-          shadowColor: Colors.black26,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+        elevation: 2,
+        shadowColor: Colors.black26,
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        minimumSize: const Size(0, 0),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
