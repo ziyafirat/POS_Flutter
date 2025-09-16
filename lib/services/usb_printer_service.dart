@@ -37,23 +37,35 @@ class UsbPrinterService extends GetxController {
   Future<bool> connectToPrinter() async {
     try {
       _logger.i('Attempting to connect to TM-M30 USB thermal printer...');
+      print('🖨️ PRINTER DEBUG: Starting connection to TM-M30...');
       
       // Call native method to connect to USB printer
-      final result = await _channel.invokeMethod('connectPrinter', {
-        'vendorId': 1208, // Seiko Epson Corporation (TM-M30 vendor ID)
-        'productId': 514, // TM-M30 product ID (may vary)
-        'printerName': 'TM-M30',
-      });
-      
-      if (result['success'] == true) {
-        _isConnected.value = true;
-        _printerStatus.value = 'Connected to ${result['printerName'] ?? 'TM-M30'}';
-        _lastError.value = '';
+      _logger.d('🔌 Calling platform channel connectPrinter...');
+      print('🖨️ PRINTER DEBUG: Calling Android platform channel...');
+      try {
+        final result = await _channel.invokeMethod('connectPrinter', {
+          'vendorId': 1208, // Seiko Epson Corporation (TM-M30 vendor ID)
+          'productId': 514, // TM-M30 product ID (may vary)
+          'printerName': 'TM-M30',
+        });
         
-        _logger.i('Successfully connected to TM-M30 USB thermal printer');
-        return true;
-      } else {
-        throw Exception(result['error'] ?? 'Unknown connection error');
+        _logger.d('🔌 Platform channel response: $result');
+        
+        if (result != null && result is Map && result['success'] == true) {
+          _isConnected.value = true;
+          _printerStatus.value = 'Connected to ${result['printerName'] ?? 'TM-M30'}';
+          _lastError.value = '';
+          
+          _logger.i('✅ Successfully connected to TM-M30 USB thermal printer via platform channel');
+          return true;
+        } else {
+          final error = result?['error'] ?? 'Platform channel returned null or failed';
+          _logger.e('❌ Platform channel connection failed: $error');
+          throw Exception(error);
+        }
+      } on PlatformException catch (e) {
+        _logger.e('❌ Platform channel exception: ${e.code} - ${e.message}');
+        throw Exception('Platform channel error: ${e.message}');
       }
       
     } catch (e) {
@@ -148,22 +160,44 @@ class UsbPrinterService extends GetxController {
   /// Send ESC/POS data to TM-M30 printer
   Future<void> _sendToTmM30Printer(Uint8List data) async {
     try {
-      _logger.d('Sending ${data.length} bytes to TM-M30 printer...');
-      _logger.d('ESC/POS data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      _logger.d('📤 Sending ${data.length} bytes to TM-M30 printer...');
+      _logger.d('📤 ESC/POS data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      
+      // Debug: Print the actual ESC/POS commands being sent
+      print('🖨️ PRINTER DEBUG: Sending ${data.length} bytes to TM-M30');
+      print('🖨️ PRINTER DEBUG: Data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       
       // Send data to TM-M30 via USB using platform channel
-      final result = await _channel.invokeMethod('printData', {
-        'data': data,
-      });
+      _logger.d('📱 Calling platform channel printData...');
+      print('🖨️ PRINTER DEBUG: Calling platform channel printData...');
       
-      if (result['success'] == true) {
-        _logger.i('ESC/POS data sent successfully to TM-M30 printer');
-      } else {
-        throw Exception(result['error'] ?? 'Print failed');
+      try {
+        final result = await _channel.invokeMethod('printData', {
+          'data': data,
+        });
+        
+        _logger.d('📱 Platform channel printData response: $result');
+        print('🖨️ PRINTER DEBUG: Platform response: $result');
+        
+        if (result != null && result is Map && result['success'] == true) {
+          final bytesTransferred = result['bytesTransferred'] ?? 0;
+          _logger.i('✅ ESC/POS data sent successfully to TM-M30 printer ($bytesTransferred bytes transferred)');
+          print('🖨️ PRINTER DEBUG: SUCCESS - $bytesTransferred bytes transferred to TM-M30');
+        } else {
+          final error = result?['error'] ?? 'Platform channel returned null or failed';
+          _logger.e('❌ Platform channel print failed: $error');
+          print('🖨️ PRINTER DEBUG: FAILED - $error');
+          throw Exception(error);
+        }
+      } on PlatformException catch (e) {
+        _logger.e('❌ Platform channel exception during print: ${e.code} - ${e.message}');
+        print('🖨️ PRINTER DEBUG: Platform exception - ${e.code}: ${e.message}');
+        throw Exception('Platform channel error: ${e.message}');
       }
       
     } catch (e) {
       _logger.e('Error sending data to TM-M30 printer: $e');
+      print('🖨️ PRINTER DEBUG: Send error - $e');
       rethrow;
     }
   }
