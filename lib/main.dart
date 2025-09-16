@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'controllers/app_controller.dart';
+import 'services/scanner_service.dart';
 import 'views/start_page.dart';
 import 'views/item_scan_page.dart';
 import 'views/payment_page.dart';
@@ -46,6 +47,7 @@ class MainNavigationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
+    final ScannerService scannerService = Get.find<ScannerService>();
     
     return Obx(() {
       Widget currentPage;
@@ -86,20 +88,24 @@ class MainNavigationWrapper extends StatelessWidget {
           break;
       }
 
-      return Stack(
-        children: [
-          // Main content with status bar
-          Column(
-            children: [
-              // Main content
-              Expanded(child: currentPage),
-              // MQTT Status Bar (moved to bottom)
-              const MqttStatusBar(),
-            ],
-          ),
-          // Fraud alert popup overlay
-          const FraudAlertPopup(),
-        ],
+      return Focus(
+        focusNode: scannerService.focusNode,
+        autofocus: true,
+        child: Stack(
+          children: [
+            // Main content with status bar
+            Column(
+              children: [
+                // Main content
+                Expanded(child: currentPage),
+                // MQTT Status Bar (moved to bottom)
+                const MqttStatusBar(),
+              ],
+            ),
+            // Fraud alert popup overlay
+            const FraudAlertPopup(),
+          ],
+        ),
       );
     });
   }

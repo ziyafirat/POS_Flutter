@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
+import '../services/scanner_service.dart';
 import '../models/app_state.dart';
 import '../test/mqtt_test_widget.dart';
 
@@ -10,6 +11,7 @@ class AssistantPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
+    final ScannerService scannerService = Get.find<ScannerService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -59,6 +61,26 @@ class AssistantPage extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text('MQTT: ${controller.appState.value.mqttStatus.name}'),
                     ],
+                  )),
+                  const SizedBox(height: 10),
+                  Obx(() => Row(
+                    children: [
+                      Icon(
+                        scannerService.isListening
+                            ? Icons.qr_code_scanner
+                            : Icons.qr_code_scanner_outlined,
+                        color: scannerService.isListening
+                            ? Colors.green
+                            : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text('Scanner: ${scannerService.isListening ? "Listening" : "Stopped"}'),
+                    ],
+                  )),
+                  const SizedBox(height: 5),
+                  Obx(() => Text(
+                    'Scans: ${scannerService.scanCount} | Last: ${scannerService.lastScannedCode.isEmpty ? "None" : scannerService.lastScannedCode}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   )),
                 ],
               ),
@@ -182,6 +204,44 @@ class AssistantPage extends StatelessWidget {
                       );
                     },
                   ),
+                  _buildTestButton(
+                    'Test Scanner',
+                    Icons.qr_code,
+                    Colors.purple,
+                    () {
+                      scannerService.testScanner();
+                      Get.snackbar(
+                        'Scanner Test',
+                        'Test barcode generated and processed',
+                        backgroundColor: Colors.purple,
+                        colorText: Colors.white,
+                      );
+                    },
+                  ),
+                  Obx(() => _buildTestButton(
+                    scannerService.isListening ? 'Stop Scanner' : 'Start Scanner',
+                    scannerService.isListening ? Icons.stop : Icons.play_arrow,
+                    scannerService.isListening ? Colors.red : Colors.green,
+                    () {
+                      if (scannerService.isListening) {
+                        scannerService.stopListening();
+                        Get.snackbar(
+                          'Scanner',
+                          'Scanner listening stopped',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      } else {
+                        scannerService.startListening();
+                        Get.snackbar(
+                          'Scanner',
+                          'Scanner listening started',
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  )),
                 ],
               ),
             ),

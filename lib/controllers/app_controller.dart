@@ -5,11 +5,13 @@ import '../models/app_state.dart';
 import '../models/alert_message.dart';
 import '../services/mqtt_service.dart';
 import '../services/web_api_service.dart';
+import '../services/scanner_service.dart';
 import 'language_controller.dart';
 
 class AppController extends GetxController {
   final Logger _logger = Logger();
   late final MqttService _mqttService;
+  late final ScannerService _scannerService;
 
   // Reactive state
   final Rx<AppState> _appState = AppState(
@@ -36,6 +38,7 @@ class AppController extends GetxController {
 
   // Stream subscriptions
   StreamSubscription<AlertMessage>? _alertSubscription;
+  StreamSubscription<String>? _scannerSubscription;
 
   @override
   void onInit() {
@@ -43,15 +46,20 @@ class AppController extends GetxController {
     // Initialize controllers
     Get.put(LanguageController());
     Get.put(WebApiService());
+    Get.put(ScannerService());
     _mqttService = Get.find<MqttService>(); // Get the already registered MQTT service
+    _scannerService = Get.find<ScannerService>(); // Get the scanner service
     _initializeServices();
     _setupAlertListener();
+    _setupScannerListener();
   }
 
   @override
   void onClose() {
     _alertSubscription?.cancel();
+    _scannerSubscription?.cancel();
     _mqttService.disconnect();
+    _scannerService.stopListening();
     
     // Stop Web API Service
     try {
@@ -76,6 +84,10 @@ class AppController extends GetxController {
       final webApiService = Get.find<WebApiService>();
       webApiService.startApiLoop();
       _logger.i('Web API Service started');
+
+      // Start Scanner Service
+      _scannerService.startListening();
+      _logger.i('Scanner Service started');
 
     } catch (e) {
       _logger.e('Service initialization failed: $e');
@@ -102,6 +114,33 @@ class AppController extends GetxController {
         }
       }
     });
+  }
+
+  void _setupScannerListener() {
+    _scannerSubscription = _scannerService.scannerStream.listen((scannedCode) {
+      _logger.i('Received scanned barcode: $scannedCode');
+      _handleScannedBarcode(scannedCode);
+    });
+  }
+
+  void _handleScannedBarcode(String barcode) {
+    try {
+      _logger.i('🔍 PROCESSING SCANNED BARCODE');
+      _logger.i('📊 Barcode: $barcode');
+      _logger.i('📱 Current Screen: ${_appState.value.currentScreen}');
+      _logger.i('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      
+      // Send scanned barcode to API
+      final webApiService = Get.find<WebApiService>();
+      webApiService.sendOneTimeRequest(barcode);
+      
+      _logger.i('✅ Barcode sent to API successfully');
+      print('🔍 Scanned barcode "$barcode" sent to API');
+      
+    } catch (e) {
+      _logger.e('❌ Error processing scanned barcode: $e');
+      print('❌ Error processing scanned barcode: $e');
+    }
   }
 
   void _updateAppState({
