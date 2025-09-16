@@ -205,15 +205,29 @@ class AssistantPage extends StatelessWidget {
                     },
                   ),
                   _buildTestButton(
-                    'Test Scanner',
+                    'Test Scanner (13 digits)',
                     Icons.qr_code,
                     Colors.purple,
                     () {
                       scannerService.testScanner();
                       Get.snackbar(
                         'Scanner Test',
-                        'Test barcode generated and processed',
+                        'Test 13-digit barcode with <80> suffix',
                         backgroundColor: Colors.purple,
+                        colorText: Colors.white,
+                      );
+                    },
+                  ),
+                  _buildTestButton(
+                    'Test Scanner (Long)',
+                    Icons.qr_code_2,
+                    Colors.deepPurple,
+                    () {
+                      scannerService.testScannerLong();
+                      Get.snackbar(
+                        'Scanner Test',
+                        'Test long barcode (>13 digits)',
+                        backgroundColor: Colors.deepPurple,
                         colorText: Colors.white,
                       );
                     },

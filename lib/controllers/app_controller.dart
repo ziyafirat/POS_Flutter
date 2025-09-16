@@ -127,15 +127,30 @@ class AppController extends GetxController {
     try {
       _logger.i('🔍 PROCESSING SCANNED BARCODE');
       _logger.i('📊 Barcode: $barcode');
+      _logger.i('📏 Barcode Length: ${barcode.length}');
       _logger.i('📱 Current Screen: ${_appState.value.currentScreen}');
       _logger.i('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
       
-      // Send scanned barcode to API
-      final webApiService = Get.find<WebApiService>();
-      webApiService.sendOneTimeRequest(barcode);
+      // Format DisplayLine based on barcode length
+      String displayLine;
+      if (barcode.length <= 13) {
+        // For barcodes 13 digits or less, append <80>
+        displayLine = '$barcode<80>';
+        _logger.i('✅ Barcode ≤ 13 digits: Using format "$displayLine"');
+        print('🔍 Barcode ≤ 13 digits: Using format "$displayLine"');
+      } else {
+        // For longer barcodes, send as-is
+        displayLine = barcode;
+        _logger.i('⚠️ Barcode > 13 digits: Using format "$displayLine"');
+        print('🔍 Barcode > 13 digits: Using format "$displayLine"');
+      }
       
-      _logger.i('✅ Barcode sent to API successfully');
-      print('🔍 Scanned barcode "$barcode" sent to API');
+      // Send formatted barcode to API
+      final webApiService = Get.find<WebApiService>();
+      webApiService.sendOneTimeRequest(displayLine);
+      
+      _logger.i('✅ Formatted barcode sent to API successfully');
+      print('🔍 Formatted barcode "$displayLine" sent to API');
       
     } catch (e) {
       _logger.e('❌ Error processing scanned barcode: $e');

@@ -156,7 +156,19 @@ class ScannerService extends GetxController {
   /// Test scanner functionality
   void testScanner() {
     _logger.i('🧪 Testing scanner functionality...');
-    _processScanData('TEST_BARCODE_${DateTime.now().millisecondsSinceEpoch}');
+    // Test with a 13-digit barcode (should get <80> appended)
+    final testBarcode = '1234567890123'; // 13 digits
+    _logger.i('🧪 Testing with 13-digit barcode: $testBarcode');
+    _processScanData(testBarcode);
+  }
+
+  /// Test scanner with long barcode
+  void testScannerLong() {
+    _logger.i('🧪 Testing scanner with long barcode...');
+    // Test with a longer barcode (should be sent as-is)
+    final testBarcode = '12345678901234567890'; // 20 digits
+    _logger.i('🧪 Testing with 20-digit barcode: $testBarcode');
+    _processScanData(testBarcode);
   }
 
   /// Get scanner status information
