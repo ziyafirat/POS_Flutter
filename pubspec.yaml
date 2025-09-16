@@ -51,6 +51,9 @@ dependencies:
   # Permissions
   permission_handler: ^11.1.0
   
+  # GPIO control for lamp
+  flutter_gpiod: ^0.5.1+5
+  
 
 dev_dependencies:
   flutter_test:

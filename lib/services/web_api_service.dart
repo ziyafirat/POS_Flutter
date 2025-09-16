@@ -20,7 +20,7 @@ class WebApiService extends GetxController {
   // API Configuration
   String _baseUrl =
       'http://192.168.2.100:50000/AEFProcess/restaefprocess/aefrun/posService';
-  static const Duration _loopInterval = Duration(milliseconds: 500);
+  static const Duration _loopInterval = Duration(milliseconds: 1000);
 
   // Observable properties
   final RxBool _isConnected = false.obs;

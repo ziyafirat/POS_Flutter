@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TM-M30 USB Thermal Printer Device Filter -->
+    <usb-device vendor-id="1208" product-id="514" />
+    
+    <!-- Generic Epson USB devices (fallback) -->
+    <usb-device vendor-id="1208" />
+    
+    <!-- Alternative TM-M30 product IDs -->
+    <usb-device vendor-id="1208" product-id="515" />
+    <usb-device vendor-id="1208" product-id="516" />
+</resources>

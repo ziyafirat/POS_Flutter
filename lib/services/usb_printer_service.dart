@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
@@ -6,6 +7,9 @@ class UsbPrinterService extends GetxController {
   static UsbPrinterService get to => Get.find();
   
   final Logger _logger = Logger();
+  
+  // Platform channel for USB printer communication
+  static const MethodChannel _channel = MethodChannel('usb_printer');
   
   // Observable properties
   final RxBool _isConnected = false.obs;
@@ -32,18 +36,25 @@ class UsbPrinterService extends GetxController {
   /// Connect to USB thermal printer
   Future<bool> connectToPrinter() async {
     try {
-      _logger.i('Attempting to connect to USB thermal printer TM-M30...');
+      _logger.i('Attempting to connect to TM-M30 USB thermal printer...');
       
-      // Simulate connection to TM-M30 thermal printer
-      // In production, this would establish actual USB connection
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Call native method to connect to USB printer
+      final result = await _channel.invokeMethod('connectPrinter', {
+        'vendorId': 1208, // Seiko Epson Corporation (TM-M30 vendor ID)
+        'productId': 514, // TM-M30 product ID (may vary)
+        'printerName': 'TM-M30',
+      });
       
-      _isConnected.value = true;
-      _printerStatus.value = 'Connected to TM-M30';
-      _lastError.value = '';
-      
-      _logger.i('Successfully connected to TM-M30 USB thermal printer');
-      return true;
+      if (result['success'] == true) {
+        _isConnected.value = true;
+        _printerStatus.value = 'Connected to ${result['printerName'] ?? 'TM-M30'}';
+        _lastError.value = '';
+        
+        _logger.i('Successfully connected to TM-M30 USB thermal printer');
+        return true;
+      } else {
+        throw Exception(result['error'] ?? 'Unknown connection error');
+      }
       
     } catch (e) {
       _logger.e('Failed to connect to USB thermal printer: $e');
@@ -59,7 +70,9 @@ class UsbPrinterService extends GetxController {
     try {
       if (_isConnected.value) {
         _logger.i('Disconnecting from TM-M30 USB thermal printer...');
-        await Future.delayed(const Duration(milliseconds: 200));
+        
+        // Call native method to disconnect
+        await _channel.invokeMethod('disconnectPrinter');
       }
       
       _isConnected.value = false;
@@ -138,13 +151,16 @@ class UsbPrinterService extends GetxController {
       _logger.d('Sending ${data.length} bytes to TM-M30 printer...');
       _logger.d('ESC/POS data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       
-      // Simulate sending to TM-M30 via USB
-      // In production, this would use platform-specific USB communication
-      // Example: await platform.invokeMethod('printToTmM30', {'data': data});
+      // Send data to TM-M30 via USB using platform channel
+      final result = await _channel.invokeMethod('printData', {
+        'data': data,
+      });
       
-      await Future.delayed(const Duration(milliseconds: 1000)); // Simulate print time
-      
-      _logger.i('ESC/POS data sent successfully to TM-M30 printer');
+      if (result['success'] == true) {
+        _logger.i('ESC/POS data sent successfully to TM-M30 printer');
+      } else {
+        throw Exception(result['error'] ?? 'Print failed');
+      }
       
     } catch (e) {
       _logger.e('Error sending data to TM-M30 printer: $e');

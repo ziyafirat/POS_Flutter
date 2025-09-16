@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../services/scanner_service.dart';
 import '../services/usb_printer_service.dart';
+import '../services/lamp.dart';
+import '../services/eft.dart';
 import '../models/app_state.dart';
 import '../test/mqtt_test_widget.dart';
 
@@ -14,6 +16,8 @@ class AssistantPage extends StatelessWidget {
     final AppController controller = Get.find<AppController>();
     final ScannerService scannerService = Get.find<ScannerService>();
     final UsbPrinterService printerService = Get.find<UsbPrinterService>();
+    final LampController lampController = Get.put(LampController());
+    final NiVm eftService = Get.put(NiVm());
 
     return Scaffold(
       appBar: AppBar(
@@ -97,6 +101,21 @@ class AssistantPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text('Printer: ${printerService.printerStatus}'),
+                    ],
+                  )),
+                  const SizedBox(height: 10),
+                  Obx(() => Row(
+                    children: [
+                      Icon(
+                        NiVm.channelOpen
+                            ? Icons.credit_card
+                            : Icons.credit_card_off,
+                        color: NiVm.channelOpen
+                            ? Colors.green
+                            : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text('EFT: ${NiVm.channelOpen ? "Connected" : "Disconnected"}'),
                     ],
                   )),
                 ],
@@ -292,6 +311,126 @@ class AssistantPage extends StatelessWidget {
                         Get.snackbar(
                           'Printer Error',
                           'Test print failed: $e',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
+                  _buildTestButton(
+                    'Lamp Red',
+                    Icons.lightbulb,
+                    Colors.red,
+                    () async {
+                      try {
+                        await lampController.activateColor(LampColor.red);
+                        Get.snackbar(
+                          'Lamp Test',
+                          'Red lamp activated',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'Lamp Error',
+                          'Failed to activate red lamp: $e',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
+                  _buildTestButton(
+                    'Lamp Green',
+                    Icons.lightbulb,
+                    Colors.green,
+                    () async {
+                      try {
+                        await lampController.activateColor(LampColor.green);
+                        Get.snackbar(
+                          'Lamp Test',
+                          'Green lamp activated',
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'Lamp Error',
+                          'Failed to activate green lamp: $e',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
+                  _buildTestButton(
+                    'Lamp Blue',
+                    Icons.lightbulb,
+                    Colors.blue,
+                    () async {
+                      try {
+                        await lampController.activateColor(LampColor.blue);
+                        Get.snackbar(
+                          'Lamp Test',
+                          'Blue lamp activated',
+                          backgroundColor: Colors.blue,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'Lamp Error',
+                          'Failed to activate blue lamp: $e',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
+                  _buildTestButton(
+                    'Lamp Off',
+                    Icons.lightbulb_outline,
+                    Colors.grey,
+                    () async {
+                      try {
+                        await lampController.activateColor(LampColor.off);
+                        Get.snackbar(
+                          'Lamp Test',
+                          'Lamp turned off',
+                          backgroundColor: Colors.grey,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'Lamp Error',
+                          'Failed to turn off lamp: $e',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      }
+                    },
+                  ),
+                  _buildTestButton(
+                    'EFT Test',
+                    Icons.credit_card,
+                    Colors.teal,
+                    () async {
+                      try {
+                        // Generate test transaction message in the specified format
+                        const testMessage = 'startTransaction {"sourceid":"7258f2eb-dbc2-a888-342243","amount":"1000","success":false,"type":"eposSale"}';
+                        
+                        // Send the formatted message to EFT service
+                        final response = await eftService.sendToAndroidPas(testMessage);
+                        
+                        Get.snackbar(
+                          'EFT Test',
+                          'Test transaction sent: ${response?.displayText ?? "No response"}',
+                          backgroundColor: response?.resultCode == '00' ? Colors.green : Colors.orange,
+                          colorText: Colors.white,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'EFT Error',
+                          'EFT test failed: $e',
                           backgroundColor: Colors.red,
                           colorText: Colors.white,
                         );
