@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
@@ -133,16 +132,16 @@ class UsbPrinterService extends GetxController {
   /// Send data to printer (simulated for now)
   Future<void> _sendToPrinter(Uint8List data) async {
     try {
-      // For Windows, we'll simulate by writing to a file
+      // Simulate printer communication without file operations
       // In production, you would use platform-specific USB communication
-      final file = File('receipt_print_data.txt');
-      await file.writeAsBytes(data);
       
-      _logger.d('Print data written to file: ${file.path}');
+      _logger.d('Sending ${data.length} bytes to USB printer...');
       _logger.d('Print data (hex): ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       
-      // Simulate printing delay
+      // Simulate USB printer communication delay
       await Future.delayed(const Duration(milliseconds: 500));
+      
+      _logger.i('Print data sent successfully to USB printer');
       
     } catch (e) {
       _logger.e('Error sending data to printer: $e');
