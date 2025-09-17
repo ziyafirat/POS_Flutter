@@ -475,7 +475,18 @@ class WebApiService extends GetxController {
       } else {
         // Fallback receipt text if no API receipt data is available
         final now = DateTime.now();
-
+        receiptText = '''
+=== SUBSTATE 7006 RECEIPT ===
+Date: ${now.toString().substring(0, 19)}
+Store: Almaya Supermarket
+Terminal: SCO-001
+SubState: 7006 Processing
+========================
+Transaction Processing...
+Please wait...
+========================
+Thank you for shopping!
+''';
         _logger.w('No API receipt data available, using fallback text for PosSubState 7006');
         print('⚠️ SUBSTATE 7006: No API receipt data, using fallback text');
       }

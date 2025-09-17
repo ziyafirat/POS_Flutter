@@ -73,8 +73,8 @@ class LanguageController extends GetxController {
       : 'يرجى مسح عناصرك للبدء';
   
   String get startShopping => isEnglish 
-      ? 'Start Shopping'
-      : 'ابدأ التسوق';
+      ? 'Please scan your items to begin'
+      : 'يرجى مسح عناصرك للبدء';
   
   String get assistant => isEnglish 
       ? 'Assistant'

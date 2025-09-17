@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -296,7 +298,79 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
     final AppController controller = Get.find<AppController>();
     final alert = controller.currentAlert;
 
-    // Check if there's a video URL (for GIF or video)
+    // Check if there's base64 image data first (priority over video URL)
+    if (alert?.imageData != null && alert!.imageData!.isNotEmpty) {
+      try {
+        // Decode base64 image data
+        final Uint8List imageBytes = base64Decode(alert.imageData!);
+        
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.red, width: 2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.memory(
+              imageBytes,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[800],
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.broken_image,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Image Error',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      } catch (e) {
+        // Handle base64 decode error
+        return Container(
+          color: Colors.grey[800],
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error,
+                  color: Colors.red,
+                  size: 40,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Invalid Image Data',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    // Fallback to video URL if no base64 image data
     if (alert?.videoUrl != null && alert!.videoUrl!.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: alert.videoUrl!,

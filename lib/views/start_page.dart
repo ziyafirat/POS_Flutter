@@ -15,9 +15,9 @@ class StartPage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Status Bar (5% of screen)
+          // Header with Almaya logo and buttons (10% of screen)
           Container(
-            height: MediaQuery.of(context).size.height * 0.05,
+            height: MediaQuery.of(context).size.height * 0.1,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -28,7 +28,7 @@ class StartPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Almaya Logo
+                // Almaya Logo (Left side)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
@@ -71,12 +71,71 @@ class StartPage extends StatelessWidget {
                     ],
                   ),
                 ),
+                // Spacer to push buttons to right
+                const Spacer(),
+                // Right side buttons
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Language Button (compact)
+                      SizedBox(
+                        width: 80,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            langController.toggleLanguage();
+                          },
+                          icon: const Icon(Icons.language, size: 16),
+                          label: Obx(() => Text(
+                            langController.languageButtonText,
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+                          )),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Call for Help Button (compact)
+                      SizedBox(
+                        width: 80,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // Help functionality
+                          },
+                          icon: const Icon(Icons.help, size: 16),
+                          label: Obx(() => Text(
+                            langController.callHelp,
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+                          )),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.withOpacity(0.9),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          // Main Content Area (60% of screen)
+          // Main Content Area (55% of screen)
           Expanded(
-            flex: 6,
+            flex: 55,
             child: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -182,7 +241,7 @@ class StartPage extends StatelessWidget {
           ),
           // Bottom section with buttons (35% of screen)
           Expanded(
-            flex: 3,
+            flex: 35,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -226,34 +285,6 @@ class StartPage extends StatelessWidget {
                             ),
                           )),
                         ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Language Toggle Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        langController.toggleLanguage();
-                      },
-                      icon: const Icon(Icons.language, size: 20),
-                      label: Obx(() => Text(
-                        langController.languageButtonText,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      )),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[600],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 4,
                       ),
                     ),
                   ),

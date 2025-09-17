@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -155,42 +156,72 @@ class MqttService {
       _logger.i('📨 [MQTT] Raw message payload: $message');
       _logger.i('📨 [MQTT] Message length: ${message.length} characters');
       
-      // Parse alert message (simplified - in real app, use proper JSON parsing)
+      // Parse alert message as JSON and check event_type
       _logger.i('🚨 [MQTT] Processing alert message...');
       
-      // Determine alert type based on message content
-      AlertType alertType = AlertType.security;
-      String title = 'Security Alert';
-      
-      if (message.toLowerCase().contains('fraud') || 
-          message.toLowerCase().contains('theft') ||
-          message.toLowerCase().contains('suspicious')) {
-        alertType = AlertType.fraud;
-        title = 'Fraud Alert';
+      try {
+        // Try to parse message as JSON
+        final jsonData = jsonDecode(message);
+        _logger.i('🚨 [MQTT] Successfully parsed JSON message');
+        _logger.i('🚨 [MQTT] JSON data: $jsonData');
+        
+        // Check if event_type exists and equals 'fraud_alert'
+        final eventType = jsonData['event_type']?.toString();
+        _logger.i('🚨 [MQTT] Event type: $eventType');
+        
+        if (eventType != 'fraud_alert') {
+          _logger.i('🚫 [MQTT] Ignoring alert - event_type is not fraud_alert (got: $eventType)');
+          return; // Exit early - don't show this alert
+        }
+        
+        _logger.i('✅ [MQTT] Event type is fraud_alert - processing alert...');
+        
+        // Extract alert details from JSON
+        final alertTitle = jsonData['title']?.toString() ?? 'Fraud Alert';
+        final alertMessage = jsonData['message']?.toString() ?? message;
+        final videoUrl = jsonData['video_url']?.toString();
+        
+        // Extract image data if present
+        String? imageData;
+        String? imageMimeType;
+        if (jsonData['image'] != null) {
+          final imageInfo = jsonData['image'];
+          imageData = imageInfo['data']?.toString();
+          imageMimeType = imageInfo['mime']?.toString();
+          _logger.i('🖼️ [MQTT] Image data found: $imageMimeType (${imageData?.length ?? 0} chars)');
+        }
+        
+        final alert = AlertMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: alertTitle,
+          message: alertMessage,
+          type: AlertType.fraud,
+          videoUrl: videoUrl,
+          imageData: imageData,
+          imageMimeType: imageMimeType,
+          timestamp: DateTime.now(),
+          isActive: true,
+        );
+
+        _logger.i('🚨 [MQTT] Fraud alert created successfully:');
+        _logger.i('🚨 [MQTT] - Alert ID: ${alert.id}');
+        _logger.i('🚨 [MQTT] - Title: ${alert.title}');
+        _logger.i('🚨 [MQTT] - Message: ${alert.message}');
+        _logger.i('🚨 [MQTT] - Type: ${alert.type}');
+        _logger.i('🚨 [MQTT] - Video URL: ${alert.videoUrl}');
+        _logger.i('🚨 [MQTT] - Timestamp: ${alert.timestamp}');
+        _logger.i('🚨 [MQTT] - Is Active: ${alert.isActive}');
+
+        _logger.i('🚨 [MQTT] Broadcasting fraud alert to stream...');
+        _alertController.add(alert);
+        _logger.i('✅ [MQTT] Fraud alert successfully broadcasted to stream');
+        
+      } catch (jsonError) {
+        _logger.w('⚠️ [MQTT] Failed to parse message as JSON: $jsonError');
+        _logger.w('⚠️ [MQTT] Raw message: $message');
+        _logger.i('🚫 [MQTT] Ignoring non-JSON alert message');
+        return; // Exit early - don't show non-JSON alerts
       }
-      
-      final alert = AlertMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        message: message,
-        type: alertType,
-        videoUrl: 'https://example.com/alert_video.mp4', // Mock video URL
-        timestamp: DateTime.now(),
-        isActive: true,
-      );
-
-      _logger.i('🚨 [MQTT] Alert created successfully:');
-      _logger.i('🚨 [MQTT] - Alert ID: ${alert.id}');
-      _logger.i('🚨 [MQTT] - Title: ${alert.title}');
-      _logger.i('🚨 [MQTT] - Message: ${alert.message}');
-      _logger.i('🚨 [MQTT] - Type: ${alert.type}');
-      _logger.i('🚨 [MQTT] - Video URL: ${alert.videoUrl}');
-      _logger.i('🚨 [MQTT] - Timestamp: ${alert.timestamp}');
-      _logger.i('🚨 [MQTT] - Is Active: ${alert.isActive}');
-
-      _logger.i('🚨 [MQTT] Broadcasting alert to stream...');
-      _alertController.add(alert);
-      _logger.i('✅ [MQTT] Alert successfully broadcasted to stream');
       
     } catch (e, stackTrace) {
       _logger.e('❌ [MQTT] Error processing MQTT message: $e');

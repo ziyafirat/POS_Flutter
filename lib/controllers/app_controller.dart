@@ -269,6 +269,15 @@ class AppController extends GetxController {
     _navigateToScreen(AppScreen.parameters);
   }
 
+  void showPaymentPopup() {
+    if (isAlertActive) {
+      _logger.w('Cannot show payment popup - alert is active');
+      return;
+    }
+    _logger.i('Showing payment popup...');
+    // The popup will be shown using Get.dialog in the calling code
+  }
+
   // Item management
   void addScannedItem(String item) {
     _scannedItems.add(item);

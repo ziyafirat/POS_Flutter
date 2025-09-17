@@ -9,6 +9,8 @@ class AlertMessage {
   final String message;
   final AlertType type;
   final String? videoUrl;
+  final String? imageData; // Base64 encoded image data
+  final String? imageMimeType; // MIME type (e.g., 'image/jpeg', 'image/png')
   final DateTime timestamp;
   final bool isActive;
 
@@ -18,6 +20,8 @@ class AlertMessage {
     required this.message,
     required this.type,
     this.videoUrl,
+    this.imageData,
+    this.imageMimeType,
     required this.timestamp,
     required this.isActive,
   });
@@ -33,6 +37,8 @@ class AlertMessage {
     String? message,
     AlertType? type,
     String? videoUrl,
+    String? imageData,
+    String? imageMimeType,
     DateTime? timestamp,
     bool? isActive,
   }) {
@@ -42,6 +48,8 @@ class AlertMessage {
       message: message ?? this.message,
       type: type ?? this.type,
       videoUrl: videoUrl ?? this.videoUrl,
+      imageData: imageData ?? this.imageData,
+      imageMimeType: imageMimeType ?? this.imageMimeType,
       timestamp: timestamp ?? this.timestamp,
       isActive: isActive ?? this.isActive,
     );

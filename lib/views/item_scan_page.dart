@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
 import '../services/web_api_service.dart';
+import '../widgets/payment_popup.dart';
 
 class ItemScanPage extends StatelessWidget {
   const ItemScanPage({super.key});
@@ -42,8 +43,14 @@ class ItemScanPage extends StatelessWidget {
       // Send API request with DisplayLine <81>
       await webApiService.sendOneTimeRequest('<81>');
       
-      // Navigate to payment page
-      controller.navigateToPayment();
+      // Show payment popup instead of navigating to payment page
+      _logger.i('🎯 Showing payment popup...');
+      print('🎯 Showing payment popup...');
+      
+      Get.dialog(
+        const PaymentPopup(),
+        barrierDismissible: false, // Prevent dismissing by tapping outside
+      );
       
     } catch (e) {
       // Log error
@@ -85,7 +92,7 @@ class ItemScanPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Almaya Logo
+                // Almaya Logo (Left side)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
@@ -96,8 +103,8 @@ class ItemScanPage extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Center(
+                        ),
+                        child: const Center(
                           child: Text(
                             'A',
                             style: TextStyle(
@@ -111,9 +118,9 @@ class ItemScanPage extends StatelessWidget {
                       const SizedBox(width: 8),
                       const Text(
                         'almaya',
-                      style: TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                        fontSize: 18,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -123,11 +130,70 @@ class ItemScanPage extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 12,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+                // Spacer to push buttons to right
+                const Spacer(),
+                // Right side buttons
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Language Button (compact)
+                      SizedBox(
+                        width: 80,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            langController.toggleLanguage();
+                          },
+                          icon: const Icon(Icons.language, size: 16),
+                          label: Obx(() => Text(
+                            langController.languageButtonText,
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+                          )),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Call for Help Button (compact)
+                      SizedBox(
+                        width: 80,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // Help functionality
+                          },
+                          icon: const Icon(Icons.help, size: 16),
+                          label: Obx(() => Text(
+                            langController.callHelp,
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+                          )),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.withOpacity(0.9),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -139,20 +205,20 @@ class ItemScanPage extends StatelessWidget {
               child: Column(
                 children: [
                   // Top gray area for product display
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      width: double.infinity,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(
-                          Icons.shopping_bag_outlined,
-                          size: 80,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Expanded(
+                  //   flex: 2,
+                  //   child: Container(
+                  //     width: double.infinity,
+                  //     color: Colors.grey[300],
+                  //     child: const Center(
+                  //       child: Icon(
+                  //         Icons.shopping_bag_outlined,
+                  //         size: 80,
+                  //         color: Colors.grey,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                   
                   // Product details section
                   Expanded(
@@ -311,60 +377,11 @@ class ItemScanPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // Left side buttons
-                Row(
-                  children: [
-                    // Language Button (smaller)
-                    SizedBox(
-                      width: 100,
-                      height: 60,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          langController.toggleLanguage();
-                        },
-                        icon: const Icon(Icons.language, size: 18),
-                        label: Obx(() => Text(
-                          langController.languageButtonText,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                        )),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24), // Almaya red
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                // Right side buttons
+                // Main action buttons (centered)
                 Expanded(
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Help Button
-                      SizedBox(
-                        width: 120,
-                        height: 60,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Help functionality
-                          },
-                          icon: const Icon(Icons.help, size: 20),
-                          label: Obx(() => Text(
-                            langController.callHelp,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          )),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
                       const SizedBox(width: 8),
                       // Finish and Pay Button (bigger)
                       Expanded(

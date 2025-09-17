@@ -12,6 +12,8 @@ AlertMessage _$AlertMessageFromJson(Map<String, dynamic> json) => AlertMessage(
   message: json['message'] as String,
   type: $enumDecode(_$AlertTypeEnumMap, json['type']),
   videoUrl: json['videoUrl'] as String?,
+  imageData: json['imageData'] as String?,
+  imageMimeType: json['imageMimeType'] as String?,
   timestamp: DateTime.parse(json['timestamp'] as String),
   isActive: json['isActive'] as bool,
 );
@@ -23,6 +25,8 @@ Map<String, dynamic> _$AlertMessageToJson(AlertMessage instance) =>
       'message': instance.message,
       'type': _$AlertTypeEnumMap[instance.type]!,
       'videoUrl': instance.videoUrl,
+      'imageData': instance.imageData,
+      'imageMimeType': instance.imageMimeType,
       'timestamp': instance.timestamp.toIso8601String(),
       'isActive': instance.isActive,
     };
