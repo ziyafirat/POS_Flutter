@@ -332,21 +332,26 @@ class _AssistantPageState extends State<AssistantPage> {
                     () async {
                       try {
                         final success = await printerService.testPrint();
-                        Get.snackbar(
-                          'Printer Test',
-                          success 
-                            ? 'Test print sent successfully!'
-                            : 'Test print failed - check printer connection',
-                          backgroundColor: success ? Colors.green : Colors.red,
-                          colorText: Colors.white,
-                        );
+                        // Use a safer snackbar approach
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            SnackBar(
+                              content: Text(success 
+                                ? 'Test print sent successfully!' 
+                                : 'Test print failed - check printer connection'),
+                              backgroundColor: success ? Colors.green : Colors.red,
+                            ),
+                          );
+                        }
                       } catch (e) {
-                        Get.snackbar(
-                          'Printer Error',
-                          'Test print failed: $e',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            SnackBar(
+                              content: Text('Test print failed: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -358,27 +363,33 @@ class _AssistantPageState extends State<AssistantPage> {
                       try {
                         if (lampController != null) {
                           await lampController!.activateColor(LampColor.red);
-                          Get.snackbar(
-                            'Lamp Test',
-                            'Red lamp activated',
-                            backgroundColor: Colors.red,
-                            colorText: Colors.white,
-                          );
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              const SnackBar(
+                                content: Text('Red lamp activated'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         } else {
-                          Get.snackbar(
-                            'Lamp Error',
-                            'Lamp controller not available',
-                            backgroundColor: Colors.red,
-                            colorText: Colors.white,
-                          );
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              const SnackBar(
+                                content: Text('Lamp controller not available'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       } catch (e) {
-                        Get.snackbar(
-                          'Lamp Error',
-                          'Failed to activate red lamp: $e',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to activate red lamp: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -390,12 +401,14 @@ class _AssistantPageState extends State<AssistantPage> {
                       try {
                         if (lampController != null) {
                           await lampController!.activateColor(LampColor.green);
-                          Get.snackbar(
-                            'Lamp Test',
-                            'Green lamp activated',
-                            backgroundColor: Colors.green,
-                            colorText: Colors.white,
-                          );
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              const SnackBar(
+                                content: Text('Green lamp activated'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
                         } else {
                           Get.snackbar(
                             'Lamp Error',
@@ -422,12 +435,14 @@ class _AssistantPageState extends State<AssistantPage> {
                       try {
                         if (lampController != null) {
                           await lampController!.activateColor(LampColor.blue);
-                          Get.snackbar(
-                            'Lamp Test',
-                            'Blue lamp activated',
-                            backgroundColor: Colors.blue,
-                            colorText: Colors.white,
-                          );
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              const SnackBar(
+                                content: Text('Blue lamp activated'),
+                                backgroundColor: Colors.blue,
+                              ),
+                            );
+                          }
                         } else {
                           Get.snackbar(
                             'Lamp Error',
@@ -454,12 +469,14 @@ class _AssistantPageState extends State<AssistantPage> {
                       try {
                         if (lampController != null) {
                           await lampController!.activateColor(LampColor.off);
-                          Get.snackbar(
-                            'Lamp Test',
-                            'Lamp turned off',
-                            backgroundColor: Colors.grey,
-                            colorText: Colors.white,
-                          );
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              const SnackBar(
+                                content: Text('Lamp turned off'),
+                                backgroundColor: Colors.grey,
+                              ),
+                            );
+                          }
                         } else {
                           Get.snackbar(
                             'Lamp Error',
