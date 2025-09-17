@@ -357,7 +357,7 @@ class _AssistantPageState extends State<AssistantPage> {
                     () async {
                       try {
                         if (lampController != null) {
-                          await lampController.activateColor(LampColor.red);
+                          await lampController!.activateColor(LampColor.red);
                           Get.snackbar(
                             'Lamp Test',
                             'Red lamp activated',
@@ -389,7 +389,7 @@ class _AssistantPageState extends State<AssistantPage> {
                     () async {
                       try {
                         if (lampController != null) {
-                          await lampController.activateColor(LampColor.green);
+                          await lampController!.activateColor(LampColor.green);
                           Get.snackbar(
                             'Lamp Test',
                             'Green lamp activated',
@@ -421,7 +421,7 @@ class _AssistantPageState extends State<AssistantPage> {
                     () async {
                       try {
                         if (lampController != null) {
-                          await lampController.activateColor(LampColor.blue);
+                          await lampController!.activateColor(LampColor.blue);
                           Get.snackbar(
                             'Lamp Test',
                             'Blue lamp activated',
@@ -453,7 +453,7 @@ class _AssistantPageState extends State<AssistantPage> {
                     () async {
                       try {
                         if (lampController != null) {
-                          await lampController.activateColor(LampColor.off);
+                          await lampController!.activateColor(LampColor.off);
                           Get.snackbar(
                             'Lamp Test',
                             'Lamp turned off',
@@ -491,11 +491,11 @@ class _AssistantPageState extends State<AssistantPage> {
                         if (eftService != null) {
                           // First try to connect to EFT server
                           print('🏦 EFT DEBUG: Testing connection to ${NiVm.address}:${NiVm.port}');
-                          final connected = await eftService.connectToAndroidPas();
+                          final connected = await eftService!.connectToAndroidPas();
                           
                           if (connected) {
                             print('🏦 EFT DEBUG: Sending test message: $testMessage');
-                            final response = await eftService.sendToAndroidPas(testMessage);
+                            final response = await eftService!.sendToAndroidPas(testMessage);
                             Get.snackbar(
                               'EFT Test',
                               'Test transaction sent: ${response?.displayText ?? "No response"}',
