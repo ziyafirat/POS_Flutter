@@ -52,6 +52,9 @@ class MainActivity : FlutterActivity() {
                 "validateConnection" -> {
                     validateConnection(result)
                 }
+                "listUsbDevices" -> {
+                    listUsbDevices(result)
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -304,6 +307,90 @@ class MainActivity : FlutterActivity() {
             println("🖨️ ANDROID DEBUG: Exception in validateConnection: ${e.message}")
             e.printStackTrace()
             result.success(mapOf("success" to false, "error" to "Validation failed: ${e.message}"))
+        }
+    }
+
+    private fun listUsbDevices(result: MethodChannel.Result) {
+        try {
+            println("🔍 USB DEBUG: Listing all connected USB devices...")
+            
+            val deviceList = usbManager?.deviceList
+            val devices = mutableListOf<Map<String, Any>>()
+            
+            if (deviceList.isNullOrEmpty()) {
+                println("🔍 USB DEBUG: No USB devices found")
+                result.success(mapOf(
+                    "success" to true,
+                    "deviceCount" to 0,
+                    "devices" to emptyList<Map<String, Any>>()
+                ))
+                return
+            }
+            
+            println("🔍 USB DEBUG: Found ${deviceList.size} USB devices")
+            
+            deviceList.values.forEachIndexed { index, device ->
+                println("🔍 USB DEBUG: Device $index:")
+                println("  - Device ID: ${device.deviceId}")
+                println("  - Vendor ID: ${device.vendorId} (0x${device.vendorId.toString(16).uppercase()})")
+                println("  - Product ID: ${device.productId} (0x${device.productId.toString(16).uppercase()})")
+                println("  - Device Name: ${device.deviceName}")
+                println("  - Product Name: ${device.productName ?: "Unknown"}")
+                println("  - Manufacturer Name: ${device.manufacturerName ?: "Unknown"}")
+                println("  - Interface Count: ${device.interfaceCount}")
+                println("  - Device Class: ${device.deviceClass}")
+                println("  - Device Subclass: ${device.deviceSubclass}")
+                println("  - Device Protocol: ${device.deviceProtocol}")
+                
+                // Check if this looks like a printer (class 7 = Printer)
+                val isPrinter = device.deviceClass == 7
+                val isEpson = device.vendorId == 1208 // Seiko Epson Corporation
+                
+                println("  - Is Printer Class: $isPrinter")
+                println("  - Is Epson: $isEpson")
+                println("  - Has Permission: ${usbManager?.hasPermission(device) ?: false}")
+                
+                // Get interface details
+                val interfaces = mutableListOf<Map<String, Any>>()
+                for (i in 0 until device.interfaceCount) {
+                    val intf = device.getInterface(i)
+                    interfaces.add(mapOf(
+                        "interfaceId" to intf.id,
+                        "interfaceClass" to intf.interfaceClass,
+                        "endpointCount" to intf.endpointCount
+                    ))
+                }
+                
+                devices.add(mapOf(
+                    "deviceId" to device.deviceId,
+                    "vendorId" to device.vendorId,
+                    "productId" to device.productId,
+                    "vendorIdHex" to "0x${device.vendorId.toString(16).uppercase()}",
+                    "productIdHex" to "0x${device.productId.toString(16).uppercase()}",
+                    "deviceName" to device.deviceName,
+                    "productName" to (device.productName ?: "Unknown"),
+                    "manufacturerName" to (device.manufacturerName ?: "Unknown"),
+                    "deviceClass" to device.deviceClass,
+                    "interfaceCount" to device.interfaceCount,
+                    "isPrinter" to isPrinter,
+                    "isEpson" to isEpson,
+                    "hasPermission" to (usbManager?.hasPermission(device) ?: false),
+                    "interfaces" to interfaces
+                ))
+            }
+            
+            println("🔍 USB DEBUG: Device listing completed")
+            
+            result.success(mapOf(
+                "success" to true,
+                "deviceCount" to devices.size,
+                "devices" to devices
+            ))
+            
+        } catch (e: Exception) {
+            println("🔍 USB DEBUG: Exception in listUsbDevices: ${e.message}")
+            e.printStackTrace()
+            result.success(mapOf("success" to false, "error" to "Device listing failed: ${e.message}"))
         }
     }
 }

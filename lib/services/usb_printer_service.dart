@@ -280,6 +280,46 @@ Test completed successfully!
     }
   }
 
+  /// List all connected USB devices
+  Future<Map<String, dynamic>> listUsbDevices() async {
+    try {
+      _logger.i('🔍 Listing all connected USB devices...');
+      print('🔍 PRINTER DEBUG: Calling platform channel listUsbDevices...');
+      
+      final result = await _channel.invokeMethod('listUsbDevices');
+      
+      if (result != null && result is Map) {
+        _logger.i('🔍 USB device listing completed');
+        print('🔍 PRINTER DEBUG: Found ${result['deviceCount']} USB devices');
+        
+        // Log device details for debugging
+        if (result['devices'] != null && result['devices'] is List) {
+          final devices = result['devices'] as List;
+          for (int i = 0; i < devices.length; i++) {
+            final device = devices[i] as Map;
+            print('🔍 Device $i: VID:${device['vendorId']} PID:${device['productId']} - ${device['productName']}');
+            if (device['isEpson'] == true) {
+              print('  ⭐ EPSON DEVICE FOUND!');
+            }
+            if (device['isPrinter'] == true) {
+              print('  🖨️ PRINTER CLASS DEVICE!');
+            }
+          }
+        }
+        
+        return Map<String, dynamic>.from(result);
+      } else {
+        _logger.e('🔍 Invalid response from platform channel');
+        return {'success': false, 'error': 'Invalid response from platform'};
+      }
+      
+    } catch (e) {
+      _logger.e('🔍 Failed to list USB devices: $e');
+      print('🔍 PRINTER DEBUG: List devices exception: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   /// Get printer status information
   Map<String, dynamic> getPrinterStatus() {
     return {

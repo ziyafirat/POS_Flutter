@@ -356,6 +356,79 @@ class _AssistantPageState extends State<AssistantPage> {
                     },
                   ),
                   _buildTestButton(
+                    'List USB Devices',
+                    Icons.usb,
+                    Colors.deepPurple,
+                    () async {
+                      try {
+                        final result = await printerService.listUsbDevices();
+                        
+                        if (result['success'] == true) {
+                          final deviceCount = result['deviceCount'] ?? 0;
+                          final devices = result['devices'] as List? ?? [];
+                          
+                          String message = 'Found $deviceCount USB devices:\n';
+                          
+                          for (int i = 0; i < devices.length && i < 5; i++) {
+                            final device = devices[i] as Map;
+                            final vendorId = device['vendorId'];
+                            final productId = device['productId'];
+                            final productName = device['productName'] ?? 'Unknown';
+                            final isEpson = device['isEpson'] == true;
+                            final isPrinter = device['isPrinter'] == true;
+                            
+                            message += '\n${i + 1}. $productName';
+                            message += '\n   VID: $vendorId (${device['vendorIdHex']})';
+                            message += '\n   PID: $productId (${device['productIdHex']})';
+                            if (isEpson) message += '\n   ⭐ EPSON DEVICE';
+                            if (isPrinter) message += '\n   🖨️ PRINTER CLASS';
+                            message += '\n';
+                          }
+                          
+                          if (devices.length > 5) {
+                            message += '\n... and ${devices.length - 5} more devices';
+                          }
+                          
+                          // Show in a dialog for better visibility
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('USB Devices'),
+                              content: SingleChildScrollView(
+                                child: Text(message),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                        } else {
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to list devices: ${result['error']}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            SnackBar(
+                              content: Text('Error listing USB devices: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  _buildTestButton(
                     'Lamp Red',
                     Icons.lightbulb,
                     Colors.red,
@@ -501,48 +574,48 @@ class _AssistantPageState extends State<AssistantPage> {
                     Colors.teal,
                     () async {
                       try {
-                        // Generate test transaction message in the specified format
-                        const testMessage = 'startTransaction {"sourceid":"7258f2eb-dbc2-a888-342243","amount":"1000","success":false,"type":"eposSale"}';
+                        print('🏦 EFT DEBUG: Starting EFT transaction test...');
                         
-                        // Send the formatted message to EFT service
                         if (eftService != null) {
-                          // First try to connect to EFT server
-                          print('🏦 EFT DEBUG: Testing connection to ${NiVm.address}:${NiVm.port}');
-                          final connected = await eftService!.connectToAndroidPas();
+                          // Call the startTransaction method with test amount
+                          const testAmount = 10.00; // Test with 10.00 currency units
+                          print('🏦 EFT DEBUG: Calling eftService.startTransaction($testAmount)...');
                           
-                          if (connected) {
-                            print('🏦 EFT DEBUG: Sending test message: $testMessage');
-                            final response = await eftService!.sendToAndroidPas(testMessage);
-                            Get.snackbar(
-                              'EFT Test',
-                              'Test transaction sent: ${response?.displayText ?? "No response"}',
-                              backgroundColor: response?.resultCode == '00' ? Colors.green : Colors.orange,
-                              colorText: Colors.white,
-                            );
-                          } else {
-                            Get.snackbar(
-                              'EFT Connection',
-                              'Failed to connect to EFT server at ${NiVm.address}:${NiVm.port}',
-                              backgroundColor: Colors.orange,
-                              colorText: Colors.white,
+                          final success = await eftService!.startTransaction(testAmount);
+                          
+                          print('🏦 EFT DEBUG: startTransaction result: $success');
+                          
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              SnackBar(
+                                content: Text(success 
+                                  ? 'EFT Transaction started successfully! Amount: \$${testAmount.toStringAsFixed(2)}'
+                                  : 'EFT Transaction failed to start'),
+                                backgroundColor: success ? Colors.green : Colors.red,
+                              ),
                             );
                           }
                         } else {
-                          Get.snackbar(
-                            'EFT Error',
-                            'EFT service not available',
-                            backgroundColor: Colors.red,
-                            colorText: Colors.white,
-                          );
+                          print('🏦 EFT DEBUG: EFT service is null');
+                          if (Get.context != null) {
+                            ScaffoldMessenger.of(Get.context!).showSnackBar(
+                              const SnackBar(
+                                content: Text('EFT service not available'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       } catch (e) {
-                        print('🏦 EFT DEBUG: Error - $e');
-                        Get.snackbar(
-                          'EFT Error',
-                          'EFT test failed: Check if EFT server is running on ${NiVm.address}:${NiVm.port}',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
+                        print('🏦 EFT DEBUG: Exception in EFT test: $e');
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            SnackBar(
+                              content: Text('EFT test failed: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -591,36 +664,36 @@ class _AssistantPageState extends State<AssistantPage> {
     VoidCallback onPressed,
   ) {
     return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
         elevation: 2,
         shadowColor: Colors.black26,
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         minimumSize: const Size(0, 0),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
-        children: [
+          children: [
           Icon(icon, size: 14),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 
