@@ -283,8 +283,12 @@ class NiVm extends GetxController {
       if (response.startsWith("connected")) {
         return const TxnMessage(displayText: "CONNECTED");
       } else if (response.startsWith("transaction")) {
+        // Remove "transaction " (11 characters) from the beginning
+        String jsonPart = response.substring(11).trim();
+        logWrite("Extracted JSON: $jsonPart");
+        
         var txnMessage = TxnMessage.fromJson(
-          json.decode(response.substring(12)) as Map<String, dynamic>,
+          json.decode(jsonPart) as Map<String, dynamic>,
         );
         if ([
           'Card Not Valid',

@@ -98,8 +98,10 @@ class PaymentPage extends StatelessWidget {
       // Set processing state
       controller.setProcessingPayment(true);
       
-      // Get EFT service instance
-      final eftService = Get.find<NiVm>();
+      // Get EFT service instance (initialize if not registered)
+      final eftService = Get.isRegistered<NiVm>() 
+          ? Get.find<NiVm>() 
+          : Get.put(NiVm(), permanent: true);
       
       // Log the action button request
       print('🔘 ACTION BUTTON REQUEST');
@@ -127,6 +129,44 @@ class PaymentPage extends StatelessWidget {
       if (success) {
         _logger.i('✅ EFT transaction started successfully');
         print('✅ EFT transaction started successfully');
+        
+        // Send API request with amount + <94> for card payment
+        try {
+          final webApiService = Get.find<WebApiService>();
+          String formattedAmount = _formatAmountForApi(totalAmount);
+          String cardCommand = '$formattedAmount<94>';
+          
+          // Log the API request
+          print('🔘 EFT SUCCESS API REQUEST');
+          print('📱 Screen: Payment Page');
+          print('💳 Payment Method: Card (EFT Success)');
+          print('💵 Total Amount: $totalAmount');
+          print('🔢 Formatted Amount: $formattedAmount');
+          print('🎯 Display Line: <94>');
+          print('📤 Combined Command: "$cardCommand"');
+          print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          
+          _logger.i('EFT SUCCESS API REQUEST');
+          _logger.i('Screen: Payment Page');
+          _logger.i('Payment Method: Card (EFT Success)');
+          _logger.i('Total Amount: $totalAmount');
+          _logger.i('Formatted Amount: $formattedAmount');
+          _logger.i('Display Line: <94>');
+          _logger.i('Combined Command: "$cardCommand"');
+          _logger.i('Timestamp: ${DateTime.now().toIso8601String()}');
+          _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          
+          await webApiService.sendOneTimeRequest(cardCommand);
+          
+          _logger.i('✅ EFT success API request sent successfully');
+          print('✅ EFT success API request sent successfully');
+          
+        } catch (apiError) {
+          _logger.e('❌ Failed to send EFT success API request: $apiError');
+          print('❌ Failed to send EFT success API request: $apiError');
+          // Continue with the flow even if API request fails
+        }
         
         // Process payment after successful EFT start
         controller.processPayment('card');
