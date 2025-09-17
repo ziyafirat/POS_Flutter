@@ -43,6 +43,7 @@ class UsbPrinterService extends GetxController {
       final generator = Generator(PaperSize.mm80, profile);
       print('🖨️ V2 DEBUG: Generator created successfully');
 
+
       List<int> bytes = [];
       bytes += generator.text(
         '*** ALMAYA SUPERMARKET ***',
