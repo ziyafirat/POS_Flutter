@@ -4,6 +4,8 @@ import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
 import '../services/web_api_service.dart';
+import '../services/eft.dart';
+import '../widgets/card_payment_popup.dart';
 
 class PaymentPage extends StatelessWidget {
   const PaymentPage({super.key});
@@ -70,6 +72,95 @@ class PaymentPage extends StatelessWidget {
         colorText: Colors.white,
         duration: const Duration(seconds: 3),
       );
+    } finally {
+      // Reset processing state
+      controller.setProcessingPayment(false);
+    }
+  }
+
+  static Future<void> _handleCardPayment(AppController controller) async {
+    // Get the total amount
+    double totalAmount = controller.totalAmount;
+    
+    // Show card payment popup
+    Get.dialog(
+      CardPaymentPopup(
+        amount: totalAmount,
+        onCancel: () {
+          Get.back(); // Close popup
+          controller.setProcessingPayment(false);
+        },
+      ),
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+    );
+    
+    try {
+      // Set processing state
+      controller.setProcessingPayment(true);
+      
+      // Get EFT service instance
+      final eftService = Get.find<NiVm>();
+      
+      // Log the action button request
+      print('🔘 ACTION BUTTON REQUEST');
+      print('📱 Screen: Payment Page');
+      print('💳 Payment Method: Card (EFT)');
+      print('💵 Total Amount: $totalAmount');
+      print('📤 Calling eftService.startTransaction($totalAmount)');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      _logger.i('ACTION BUTTON REQUEST');
+      _logger.i('Screen: Payment Page');
+      _logger.i('Payment Method: Card (EFT)');
+      _logger.i('Total Amount: $totalAmount');
+      _logger.i('Calling eftService.startTransaction($totalAmount)');
+      _logger.i('Timestamp: ${DateTime.now().toIso8601String()}');
+      _logger.i('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      // Call EFT service to start transaction
+      final success = await eftService.startTransaction(totalAmount);
+      
+      // Close the popup
+      Get.back();
+      
+      if (success) {
+        _logger.i('✅ EFT transaction started successfully');
+        print('✅ EFT transaction started successfully');
+        
+        // Process payment after successful EFT start
+        controller.processPayment('card');
+        
+        // Navigate to printing page
+        _logger.i('🖨️ Navigating to printing page after successful EFT');
+        print('🖨️ Navigating to printing page after successful EFT');
+        controller.navigateToPrinting();
+        
+      } else {
+        _logger.e('❌ EFT transaction failed to start');
+        print('❌ EFT transaction failed to start');
+        
+        // Navigate to error page
+        _logger.e('🚨 Navigating to error page due to EFT failure');
+        print('🚨 Navigating to error page due to EFT failure');
+        controller.navigateToError(errorMessage: 'EFT transaction failed to start');
+      }
+      
+    } catch (e) {
+      // Close the popup if it's still open
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+      
+      // Log error
+      _logger.e('❌ CARD PAYMENT ERROR: $e');
+      print('❌ CARD PAYMENT ERROR: $e');
+      
+      // Navigate to error page
+      _logger.e('🚨 Navigating to error page due to exception: $e');
+      print('🚨 Navigating to error page due to exception: $e');
+      controller.navigateToError(errorMessage: 'Card payment failed: $e');
+      
     } finally {
       // Reset processing state
       controller.setProcessingPayment(false);
@@ -380,9 +471,7 @@ class PaymentPage extends StatelessWidget {
                         child: SizedBox(
                           height: 60,
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              controller.processPayment('card');
-                            },
+                            onPressed: () => _handleCardPayment(controller),
                             icon: const Icon(Icons.credit_card, size: 20),
                             label: Obx(() => Text(
                               langController.credit,

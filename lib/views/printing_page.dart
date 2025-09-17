@@ -156,8 +156,8 @@ class _PrintingPageState extends State<PrintingPage>
             Text(
               _printingCompleted 
                 ? (_waitingForPosSubState 
-                    ? (langCtrl.isEnglish ? 'Waiting for system response...' : 'Sistem yanıtı bekleniyor...')
-                    : (langCtrl.isEnglish ? 'Thank you for shopping!' : 'Alışveriş için teşekkürler!'))
+                    ? langCtrl.waitingForSystemResponse
+                    : langCtrl.thankYouForShopping)
                 : 'Printing Receipt',
               style: TextStyle(
                 fontSize: 28,
@@ -175,7 +175,7 @@ class _PrintingPageState extends State<PrintingPage>
                   ? Column(
                       children: [
                         Text(
-                          langCtrl.isEnglish ? 'Waiting for PosSubState 1008...' : 'PosSubState 1008 bekleniyor...',
+                          langCtrl.waitingForPosSubState,
                           style: const TextStyle(
                             fontSize: 18,
                             color: Colors.grey,
@@ -190,7 +190,7 @@ class _PrintingPageState extends State<PrintingPage>
                   : Column(
                       children: [
                         Text(
-                          langCtrl.isEnglish ? 'Returning to start page in' : 'Başlangıç sayfasına dönülüyor',
+                          langCtrl.returningToStart,
                           style: const TextStyle(
                             fontSize: 18,
                             color: Colors.grey,
@@ -249,7 +249,7 @@ class _PrintingPageState extends State<PrintingPage>
                   const SizedBox(height: 10),
                   Obx(() => Text('Items: ${controller.scannedItems.length}')),
                   const SizedBox(height: 5),
-                  Obx(() => Text('Total: \$${controller.totalAmount.toStringAsFixed(2)}')),
+                  Obx(() => Text('Balance: ${controller.totalAmount}')),
                   const SizedBox(height: 10),
                   const Divider(),
                   const SizedBox(height: 10),

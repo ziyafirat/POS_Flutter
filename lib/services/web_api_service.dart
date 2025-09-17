@@ -241,11 +241,12 @@ class WebApiService extends GetxController {
   void _handlePosSubStateNavigation(String posSubState) {
     final appController = Get.find<AppController>();
 
-    // Skip automatic navigation if currently in POS Cashier, Assistant, or Parameters screen
+    // Skip automatic navigation if currently in POS Cashier, Assistant, Parameters, or Error screen
     final currentScreen = appController.appState.value.currentScreen;
     if (currentScreen == AppScreen.posCashier || 
         currentScreen == AppScreen.assistant || 
-        currentScreen == AppScreen.parameters) {
+        currentScreen == AppScreen.parameters ||
+        currentScreen == AppScreen.error) {
       _logger.i(
         'Skipping automatic navigation - currently in ${currentScreen.toString().split('.').last} screen (PosSubState: $posSubState)',
       );
@@ -292,6 +293,10 @@ class WebApiService extends GetxController {
           _logger.i('Navigating to start page (PosSubState: $posSubState)');
           appController.navigateToScreen(AppScreen.start);
         }
+        break;
+      case '10333':
+        _logger.i('Navigating to error page (PosSubState: $posSubState)');
+        appController.navigateToScreen(AppScreen.error);
         break;
       case '10356':
         _logger.i('Navigating to error page (PosSubState: $posSubState)');
@@ -422,25 +427,25 @@ class WebApiService extends GetxController {
     }
   }
   
-  /// Print receipt to USB Epson printer
+  /// Print receipt to USB Epson printer using testPrintV2
   Future<void> _printReceiptToUsbPrinter(String receiptText) async {
     try {
-      _logger.i('Sending receipt to USB Epson printer...');
+      _logger.i('Sending receipt to USB Epson printer using testPrintV2...');
+      print('🖨️ MPOS DEBUG: MPOS TXN END detected - calling testPrintV2');
+      print('🖨️ MPOS DEBUG: Receipt text length: ${receiptText.length} characters');
       
       // Get the USB printer service
       final printerService = Get.find<UsbPrinterService>();
       
-      // Print the receipt
-      final success = await printerService.printReceipt(receiptText);
+      // Print the receipt using testPrintV2 method
+      await printerService.testPrintV2(receiptText);
       
-      if (success) {
-        _logger.i('Receipt printed successfully to USB Epson printer');
-      } else {
-        _logger.e('Failed to print receipt to USB Epson printer');
-      }
+      _logger.i('Receipt printed successfully to USB Epson printer via testPrintV2');
+      print('🖨️ MPOS DEBUG: testPrintV2 completed successfully');
       
     } catch (e) {
-      _logger.e('Error printing receipt to USB printer: $e');
+      _logger.e('Error printing receipt to USB printer via testPrintV2: $e');
+      print('🖨️ MPOS DEBUG: testPrintV2 failed: $e');
     }
   }
   

@@ -362,8 +362,29 @@ class _AssistantPageState extends State<AssistantPage> {
                     Colors.deepOrange,
                     () async {
                       try {
-                        print('🖨️ PRINTER DEBUG: Calling testPrintV2()...');
-                        await printerService.testPrintV2();
+                        print('🖨️ PRINTER DEBUG: Calling testPrintV2() with test receipt...');
+                        
+                        // Create test receipt text
+                        final now = DateTime.now();
+                        final testReceipt = '''
+=== TEST RECEIPT ===
+Date: ${now.toString().substring(0, 19)}
+Store: Test Store
+Terminal: 001
+Transaction: TEST-001
+==================
+1x Test Item    \$10.00
+1x Sample       \$5.00
+==================
+Subtotal:       \$15.00
+Tax:            \$1.50
+Total:          \$16.50
+==================
+MPOS TXN END
+Thank you!
+''';
+                        
+                        await printerService.testPrintV2(testReceipt);
                         
                         print('🖨️ PRINTER DEBUG: testPrintV2() completed without exception');
                         if (Get.context != null) {

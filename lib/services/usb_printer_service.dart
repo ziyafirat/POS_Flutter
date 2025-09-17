@@ -32,7 +32,7 @@ class UsbPrinterService extends GetxController {
   final int productId = 3616;  // TM-m30 model
   final String printerName = "TM-m30 Bluetooth";
 
-  Future<void> testPrintV2() async {
+  Future<void> testPrintV2(String receiptText) async {
     try {
       print('🖨️ V2 DEBUG: Starting testPrintV2...');
       print('🖨️ V2 DEBUG: Using VID:$vendorId PID:$productId Name:$printerName');
@@ -92,6 +92,97 @@ class UsbPrinterService extends GetxController {
       rethrow;
     }
   }
+
+  Future<void> testPrintV2old() async {
+    try {
+      print('🖨️ V2 DEBUG: Starting testPrintV2...');
+      print(
+        '🖨️ V2 DEBUG: Using VID:$vendorId PID:$productId Name:$printerName',
+      );
+
+      final devices = await PrinterManager.instance
+          .discovery(type: PrinterType.usb)
+          .toList();
+      for (var d in devices) {
+        print(
+          'Found USB device: ${d.name} VID:${d.vendorId} PID:${d.productId}',
+        );
+      }
+      // ESC/POS generator
+      print('🖨️ V2 DEBUG: Loading capability profile...');
+      final profile = await CapabilityProfile.load(name: 'XP-N160I');
+      // final profile = await CapabilityProfile.load(
+      // name: 'default',
+      // ); // or epson.json if you have it
+      final generator = Generator(PaperSize.mm80, profile);
+      print('🖨️ V2 DEBUG: Generator created successfully');
+
+      List<int> bytes = [];
+      bytes += generator.text(
+        'I213 - IDOL -GITEX 2024',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+      // bytes += generator.text(
+      //   'I213 - IDOL -GITEX 2024 00000',
+      //   styles: const PosStyles(align: PosAlign.center, bold: true),
+      // );
+      // bytes += generator.feed(2);
+      // bytes += generator.cut();
+
+      print('🖨️ V2 DEBUG: Generated ${bytes.length} bytes of ESC/POS data');
+
+      // Connect via USB
+      print('🖨️ V2 DEBUG: Attempting to connect to printer...');
+      // await _printerManager.connect(
+      //   type: PrinterType.usb,
+      //   model: UsbPrinterInput(
+      //     name: printerName,
+      //     productId: productId.toString(),
+      //     vendorId: vendorId.toString(),
+      //   ),
+      // );
+
+      // Connect to printer
+      final printerManager = PrinterManager.instance;
+      final result = await printerManager.connect(
+        type: PrinterType.usb,
+        model: UsbPrinterInput(
+          name: printerName,
+          productId: productId.toString(), // must be String
+          vendorId: vendorId.toString(), // must be String
+        ),
+      );
+
+      print("USB connect result: $result");
+
+      print('USB connect result: $result');
+      print('🖨️ V2 DEBUG: Connected to printer successfully');
+
+      // Send data
+      print('🖨️ V2 DEBUG: Sending ${bytes.length} bytes to printer...');
+      await _printerManager.send(type: PrinterType.usb, bytes: bytes);
+      print('🖨️ V2 DEBUG: Data sent successfully');
+
+      // Disconnect (optional, but good practice)
+      print('🖨️ V2 DEBUG: Disconnecting from printer...');
+      await _printerManager.disconnect(type: PrinterType.usb);
+      print('🖨️ V2 DEBUG: Disconnected successfully');
+
+      print('✅ Test print V2 completed successfully for Epson TM-m30');
+    } catch (e) {
+      print('❌ USB print V2 error: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      if (e.toString().contains('Return code: -1')) {
+        print('❌ DIAGNOSIS: Return code -1 indicates:');
+        print('   - Printer not responding (check power/connection)');
+        print('   - USB communication timeout');
+        print('   - Printer in error state (paper jam, out of paper, etc.)');
+        print('   - Wrong VID/PID (try \'List USB Devices\' to verify)');
+      }
+      rethrow;
+    }
+  }
+
 
   
   @override

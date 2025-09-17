@@ -37,6 +37,12 @@ class LanguageController extends GetxController {
   String get returnScanMore => isEnglish ? 'RETURN\nScan More Items' : 'إرجاع\nمسح المزيد من العناصر';
   String get requestHelp => isEnglish ? 'Request Help' : 'طلب المساعدة';
   
+  // Card payment popup texts
+  String get cardPaymentProcessing => isEnglish ? 'Card Payment Processing' : 'معالجة دفع البطاقة';
+  String get pleaseTapOrInsertCard => isEnglish ? 'Please tap or insert your card' : 'يرجى لمس أو إدخال بطاقتك';
+  String get processingYourPayment => isEnglish ? 'Processing your payment...' : 'جاري معالجة دفعتك...';
+  String get cardHolder => isEnglish ? 'CARD HOLDER' : 'حامل البطاقة';
+  
   // Item list texts
   String get noItemsScanned => isEnglish ? 'No items scanned yet' : 'لم يتم مسح أي عناصر بعد';
   String get shoppingTotal => isEnglish ? 'Shopping Total:' : 'إجمالي التسوق:';
@@ -78,6 +84,14 @@ class LanguageController extends GetxController {
   String get thankYouForShopping => isEnglish 
       ? 'Thank you for shopping!'
       : 'شكراً لك على التسوق!';
+  
+  String get waitingForSystemResponse => isEnglish 
+      ? 'Waiting for system response...'
+      : 'انتظار استجابة النظام...';
+  
+  String get waitingForPosSubState => isEnglish 
+      ? 'Waiting for PosSubState 1008...'
+      : 'انتظار PosSubState 1008...';
   
   String get returningToStart => isEnglish 
       ? 'Returning to start page in'
