@@ -16,6 +16,12 @@ class WebApiService extends GetxController {
 
   // Flag to track if 1010 state has been received (to skip 1002 after 1010)
   bool _hasReceived1010 = false;
+  
+  // Flag to track if 7006 printer text has been sent (to send only once)
+  bool _hasSent7006PrinterText = false;
+  
+  // Store the latest receipt data for printing
+  String? _latestReceiptText;
 
   // API Configuration
   String _baseUrl =
@@ -262,6 +268,7 @@ class WebApiService extends GetxController {
           );
           return;
         }
+        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
         // Clear user-initiated navigation flag when system takes control
         appController.clearUserInitiatedNavigation();
         _logger.i('Navigating to item scan page (PosSubState: $posSubState)');
@@ -269,12 +276,14 @@ class WebApiService extends GetxController {
         break;
       case '1010':
         _hasReceived1010 = true; // Set flag when 1010 is received
+        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
         // Clear user-initiated navigation flag when system takes control
         appController.clearUserInitiatedNavigation();
         _logger.i('Navigating to payment page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.payment);
         break;
       case '1001':
+        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
         // Clear user-initiated navigation flag when system takes control
         appController.clearUserInitiatedNavigation();
         _logger.i('Navigating to start page (PosSubState: $posSubState)');
@@ -282,6 +291,7 @@ class WebApiService extends GetxController {
         break;
       case '1008':
         _hasReceived1010 = false; // Reset flag when 1008 is received
+        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
         
         // Check if user manually navigated to item scan page
         if (appController.userInitiatedNavigation && 
@@ -305,6 +315,22 @@ class WebApiService extends GetxController {
       case '10398':
         _logger.i('Navigating to error page (PosSubState: $posSubState)');
         appController.navigateToScreen(AppScreen.error);
+        break;
+      case '7006':
+        _logger.i('Navigating to printing page (PosSubState: $posSubState)');
+        appController.navigateToScreen(AppScreen.printing);
+        
+        // Send printer text only once until substate changes
+        if (!_hasSent7006PrinterText) {
+          _hasSent7006PrinterText = true;
+          _logger.i('Sending printer text for PosSubState 7006 (first time)');
+          print('🖨️ SUBSTATE 7006: Sending printer text (first time)');
+          
+          _sendPrinterTextFor7006();
+        } else {
+          _logger.i('Skipping printer text for PosSubState 7006 (already sent)');
+          print('🖨️ SUBSTATE 7006: Skipping printer text (already sent)');
+        }
         break;
       default:
         _logger.d('Unknown PosSubState: $posSubState');
@@ -407,6 +433,9 @@ class WebApiService extends GetxController {
     try {
       final decodedReceipt = _decodeBase64Lines(receipt);
       final receiptText = decodedReceipt.join('\n');
+      
+      // Store the latest receipt text for use in substate 7006
+      _latestReceiptText = receiptText;
 
       _logger.i('Decoded receipt for printing:\n$receiptText');
       
@@ -424,6 +453,42 @@ class WebApiService extends GetxController {
       // For now, just log it
     } catch (e) {
       _logger.e('Error processing Receipt: $e');
+    }
+  }
+  
+  /// Send printer text for PosSubState 7006
+  Future<void> _sendPrinterTextFor7006() async {
+    try {
+      _logger.i('Sending printer text for PosSubState 7006...');
+      print('🖨️ SUBSTATE 7006: Starting printer text send...');
+      
+      // Get the USB printer service
+      final printerService = Get.find<UsbPrinterService>();
+      
+      // Use the latest receipt text from API response, or fallback text if none available
+      String receiptText;
+      if (_latestReceiptText != null && _latestReceiptText!.isNotEmpty) {
+        receiptText = _latestReceiptText!;
+        _logger.i('Using API response receipt data for PosSubState 7006');
+        print('🖨️ SUBSTATE 7006: Using API response receipt data');
+        print('🖨️ SUBSTATE 7006: Receipt length: ${receiptText.length} characters');
+      } else {
+        // Fallback receipt text if no API receipt data is available
+        final now = DateTime.now();
+
+        _logger.w('No API receipt data available, using fallback text for PosSubState 7006');
+        print('⚠️ SUBSTATE 7006: No API receipt data, using fallback text');
+      }
+      
+      // Print using testPrintV2 method
+      await printerService.testPrintV2(receiptText);
+      
+      _logger.i('✅ PosSubState 7006 printer text sent successfully');
+      print('✅ SUBSTATE 7006: Printer text sent successfully');
+      
+    } catch (e) {
+      _logger.e('❌ Failed to send PosSubState 7006 printer text: $e');
+      print('❌ SUBSTATE 7006: Failed to send printer text: $e');
     }
   }
   

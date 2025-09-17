@@ -45,12 +45,13 @@ class UsbPrinterService extends GetxController {
 
       List<int> bytes = [];
       bytes += generator.text(
-        '*** EPSON TM-m30 USB Test Print ***',
+        '*** ALMAYA SUPERMARKET ***',
         styles: const PosStyles(align: PosAlign.center, bold: true),
       );
-      bytes += generator.text('Hello from Flutter via USB!');
-      bytes += generator.text('VID: $vendorId PID: $productId');
-      bytes += generator.text('Time: ${DateTime.now()}');
+       bytes += generator.text(
+        receiptText,
+        styles: const PosStyles(align: PosAlign.left),
+      );
       bytes += generator.feed(2);
       bytes += generator.cut();
       
