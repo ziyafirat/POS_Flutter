@@ -34,9 +34,14 @@ class UsbPrinterService extends GetxController {
 
   Future<void> testPrintV2() async {
     try {
+      print('🖨️ V2 DEBUG: Starting testPrintV2...');
+      print('🖨️ V2 DEBUG: Using VID:$vendorId PID:$productId Name:$printerName');
+      
       // ESC/POS generator
+      print('🖨️ V2 DEBUG: Loading capability profile...');
       final profile = await CapabilityProfile.load(name: 'default');
       final generator = Generator(PaperSize.mm80, profile);
+      print('🖨️ V2 DEBUG: Generator created successfully');
 
       List<int> bytes = [];
       bytes += generator.text(
@@ -44,10 +49,15 @@ class UsbPrinterService extends GetxController {
         styles: const PosStyles(align: PosAlign.center, bold: true),
       );
       bytes += generator.text('Hello from Flutter via USB!');
+      bytes += generator.text('VID: $vendorId PID: $productId');
+      bytes += generator.text('Time: ${DateTime.now()}');
       bytes += generator.feed(2);
       bytes += generator.cut();
+      
+      print('🖨️ V2 DEBUG: Generated ${bytes.length} bytes of ESC/POS data');
 
       // Connect via USB
+      print('🖨️ V2 DEBUG: Attempting to connect to printer...');
       await _printerManager.connect(
         type: PrinterType.usb,
         model: UsbPrinterInput(
@@ -56,16 +66,30 @@ class UsbPrinterService extends GetxController {
           vendorId: vendorId.toString(),
         ),
       );
+      print('🖨️ V2 DEBUG: Connected to printer successfully');
 
       // Send data
+      print('🖨️ V2 DEBUG: Sending ${bytes.length} bytes to printer...');
       await _printerManager.send(type: PrinterType.usb, bytes: bytes);
+      print('🖨️ V2 DEBUG: Data sent successfully');
 
       // Disconnect (optional, but good practice)
+      print('🖨️ V2 DEBUG: Disconnecting from printer...');
       await _printerManager.disconnect(type: PrinterType.usb);
+      print('🖨️ V2 DEBUG: Disconnected successfully');
 
-      print("✅ Test print sent to Epson TM-m30");
+      print("✅ Test print V2 completed successfully for Epson TM-m30");
     } catch (e) {
-      print("❌ USB print error: $e");
+      print("❌ USB print V2 error: $e");
+      print("❌ Error type: ${e.runtimeType}");
+      if (e.toString().contains('Return code: -1')) {
+        print("❌ DIAGNOSIS: Return code -1 indicates:");
+        print("   - Printer not responding (check power/connection)");
+        print("   - USB communication timeout");
+        print("   - Printer in error state (paper jam, out of paper, etc.)");
+        print("   - Wrong VID/PID (try 'List USB Devices' to verify)");
+      }
+      rethrow;
     }
   }
 
