@@ -331,6 +331,7 @@ class _AssistantPageState extends State<AssistantPage> {
                     Colors.orange,
                     () async {
                       try {
+                        print('🖨️ PRINTER DEBUG: Calling testPrint()...');
                         final success = await printerService.testPrint();
                         // Use a safer snackbar approach
                         if (Get.context != null) {
@@ -348,6 +349,37 @@ class _AssistantPageState extends State<AssistantPage> {
                           ScaffoldMessenger.of(Get.context!).showSnackBar(
                             SnackBar(
                               content: Text('Test print failed: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  _buildTestButton(
+                    'Test Print V2',
+                    Icons.print_outlined,
+                    Colors.deepOrange,
+                    () async {
+                      try {
+                        print('🖨️ PRINTER DEBUG: Calling testPrintV2()...');
+                        await printerService.testPrintV2();
+                        
+                        print('🖨️ PRINTER DEBUG: testPrintV2() completed without exception');
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            const SnackBar(
+                              content: Text('Test Print V2 completed successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        print('🖨️ PRINTER DEBUG: testPrintV2 failed: $e');
+                        if (Get.context != null) {
+                          ScaffoldMessenger.of(Get.context!).showSnackBar(
+                            SnackBar(
+                              content: Text('Test Print V2 failed: $e'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -578,7 +610,7 @@ class _AssistantPageState extends State<AssistantPage> {
                         
                         if (eftService != null) {
                           // Call the startTransaction method with test amount
-                          const testAmount = 10.00; // Test with 10.00 currency units
+                          const testAmount = 100.00; // Test with 10.00 currency units
                           print('🏦 EFT DEBUG: Calling eftService.startTransaction($testAmount)...');
                           
                           final success = await eftService!.startTransaction(testAmount);

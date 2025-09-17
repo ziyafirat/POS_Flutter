@@ -57,6 +57,9 @@ dependencies:
   # GPIO control for lamp
   flutter_gpiod: ^0.5.1+5
   
+  # POS Printer support
+  flutter_pos_printer_platform_image_3_sdt: ^1.2.12
+  
 
 dev_dependencies:
   flutter_test:

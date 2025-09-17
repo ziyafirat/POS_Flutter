@@ -2,6 +2,9 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import 'package:flutter_pos_printer_platform_image_3_sdt/flutter_pos_printer_platform_image_3_sdt.dart';
+import 'package:flutter_pos_printer_platform_image_3_sdt/esc_pos_utils_platform/flutter_esc_pos_utils.dart';
+
 
 class UsbPrinterService extends GetxController {
   static UsbPrinterService get to => Get.find();
@@ -20,6 +23,52 @@ class UsbPrinterService extends GetxController {
   bool get isConnected => _isConnected.value;
   String get lastError => _lastError.value;
   String get printerStatus => _printerStatus.value;
+
+
+  final PrinterManager _printerManager = PrinterManager.instance;
+
+  // Hardcoded Epson TM-m30 info
+  final int vendorId = 1208;   // Seiko Epson Corp
+  final int productId = 3616;  // TM-m30 model
+  final String printerName = "TM-m30 Bluetooth";
+
+  Future<void> testPrintV2() async {
+    try {
+      // ESC/POS generator
+      final profile = await CapabilityProfile.load(name: 'default');
+      final generator = Generator(PaperSize.mm80, profile);
+
+      List<int> bytes = [];
+      bytes += generator.text(
+        '*** EPSON TM-m30 USB Test Print ***',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+      bytes += generator.text('Hello from Flutter via USB!');
+      bytes += generator.feed(2);
+      bytes += generator.cut();
+
+      // Connect via USB
+      await _printerManager.connect(
+        type: PrinterType.usb,
+        model: UsbPrinterInput(
+          name: printerName,
+          productId: productId.toString(),
+          vendorId: vendorId.toString(),
+        ),
+      );
+
+      // Send data
+      await _printerManager.send(type: PrinterType.usb, bytes: bytes);
+
+      // Disconnect (optional, but good practice)
+      await _printerManager.disconnect(type: PrinterType.usb);
+
+      print("✅ Test print sent to Epson TM-m30");
+    } catch (e) {
+      print("❌ USB print error: $e");
+    }
+  }
+
   
   @override
   void onInit() {
@@ -45,8 +94,8 @@ class UsbPrinterService extends GetxController {
       try {
         final result = await _channel.invokeMethod('connectPrinter', {
           'vendorId': 1208, // Seiko Epson Corporation (TM-M30 vendor ID)
-          'productId': 514, // TM-M30 product ID (may vary)
-          'printerName': 'TM-M30',
+          'productId': 3616, // TM-M30 product ID (may vary)
+          'printerName': 'TM-m30 Bluetooth', // Optional printer name
         });
         
         _logger.d('🔌 Platform channel response: $result');
