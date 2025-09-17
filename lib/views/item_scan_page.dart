@@ -27,9 +27,41 @@ class ItemScanPage extends StatelessWidget {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return BarcodeEntryPopup(
-          onBarcodeEntered: (barcode) {
+          onBarcodeEntered: (barcode) async {
             final controller = Get.find<AppController>();
-            controller.addScannedItem(barcode);
+            try {
+              // Try to add via gRPC first, fall back to mock if needed
+              if (controller.currentTransactionId.isNotEmpty) {
+                await controller.addItemViaGrpc(barcode, quantity: 1);
+                Get.snackbar(
+                  'Success',
+                  'Item added via gRPC: $barcode',
+                  backgroundColor: Colors.green,
+                  colorText: Colors.white,
+                  duration: const Duration(seconds: 2),
+                );
+              } else {
+                // Fall back to mock method if no transaction
+                controller.addScannedItem(barcode);
+                Get.snackbar(
+                  'Info',
+                  'Item added locally (no active transaction): $barcode',
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                  duration: const Duration(seconds: 2),
+                );
+              }
+            } catch (e) {
+              // Fall back to mock method on error
+              controller.addScannedItem(barcode);
+              Get.snackbar(
+                'Warning',
+                'Added locally due to gRPC error: $e',
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 3),
+              );
+            }
           },
           onCancel: () {
             // Handle cancel if needed
@@ -45,9 +77,41 @@ class ItemScanPage extends StatelessWidget {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return ProductSearchPopup(
-          onProductSelected: (productName) {
+          onProductSelected: (productName) async {
             final controller = Get.find<AppController>();
-            controller.addScannedItem(productName);
+            try {
+              // Try to add via gRPC first, fall back to mock if needed
+              if (controller.currentTransactionId.isNotEmpty) {
+                await controller.addItemViaGrpc(productName, quantity: 1);
+                Get.snackbar(
+                  'Success',
+                  'Product added via gRPC: $productName',
+                  backgroundColor: Colors.green,
+                  colorText: Colors.white,
+                  duration: const Duration(seconds: 2),
+                );
+              } else {
+                // Fall back to mock method if no transaction
+                controller.addScannedItem(productName);
+                Get.snackbar(
+                  'Info',
+                  'Product added locally (no active transaction): $productName',
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                  duration: const Duration(seconds: 2),
+                );
+              }
+            } catch (e) {
+              // Fall back to mock method on error
+              controller.addScannedItem(productName);
+              Get.snackbar(
+                'Warning',
+                'Added locally due to gRPC error: $e',
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 3),
+              );
+            }
           },
         );
       },
@@ -548,9 +612,33 @@ class ItemScanPage extends StatelessWidget {
                       child: SizedBox(
                         height: 50,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            final itemId = 'ITEM_${DateTime.now().millisecondsSinceEpoch}';
-                            controller.addScannedItem(itemId);
+                          onPressed: () async {
+                            try {
+                              // Debug transaction status before attempting to add item
+                              controller.debugTransactionStatus();
+                              
+                              // Use a standard test barcode for gRPC testing
+                              const testBarcode = 'NORMAL_ITEM_WITH_NO_WEIGHT_DEFINED';
+                              await controller.addItemViaGrpc(testBarcode, quantity: 1);
+                              
+                              // Show success message
+                              Get.snackbar(
+                                'Success',
+                                'Test item added via gRPC: $testBarcode',
+                                backgroundColor: Colors.green,
+                                colorText: Colors.white,
+                                duration: const Duration(seconds: 3),
+                              );
+                            } catch (e) {
+                              // Show error message
+                              Get.snackbar(
+                                'Error',
+                                'Failed to add item: $e',
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                                duration: const Duration(seconds: 5),
+                              );
+                            }
                           },
                           icon: const Icon(Icons.add_shopping_cart),
                           label: Obx(() => Text(langController.addTestItem)),

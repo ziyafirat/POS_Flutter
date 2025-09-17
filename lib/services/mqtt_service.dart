@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -44,17 +45,29 @@ class MqttService {
         return false;
       }
       
-      // Create a fresh client instance (like the working testConnectionWithSSL method)
+      // First, test if the broker is reachable with a quick timeout
+      _logger.i('🌐 [MQTT] Testing broker reachability first...');
+      final brokerReachable = await _quickBrokerTest(brokerAddress, brokerPort);
+      
+      if (!brokerReachable) {
+        _logger.w('⚠️ [MQTT] Broker not reachable, skipping connection attempt');
+        _logger.w('⚠️ [MQTT] This is normal if MQTT broker is not available');
+        _logger.w('⚠️ [MQTT] App will continue without MQTT functionality');
+        _isConnected = false;
+        return false;
+      }
+      
+      // Create a fresh client instance with improved timeout settings
       _logger.i('🔌 [MQTT] Creating new MQTT client instance...');
       _client = MqttServerClient(brokerAddress, clientIdentifier);
       _client!.port = brokerPort;
       _client!.secure = mqttSecure;
-      _client!.logging(on: false); // Match working method - disable logging
+      _client!.logging(on: false);
       _client!.autoReconnect = false;
       _client!.keepAlivePeriod = 20;
-      _client!.connectTimeoutPeriod = 10000;
+      _client!.connectTimeoutPeriod = 5000; // Reduced timeout to 5 seconds
       
-      // Set connection message (like the working method)
+      // Set connection message
       _client!.connectionMessage = MqttConnectMessage()
           .withClientIdentifier(clientIdentifier)
           .authenticateAs(mqttUsername, mqttPassword);
@@ -63,15 +76,18 @@ class MqttService {
       _client!.onConnected = _onConnected;
       _client!.onDisconnected = _onDisconnected;
       
-      _logger.i('🔌 [MQTT] Attempting to connect...');
+      _logger.i('🔌 [MQTT] Attempting to connect with 5 second timeout...');
       
-      // Connect (like the working method)
-      await _client!.connect(mqttUsername, mqttPassword);
+      // Connect with timeout wrapper
+      final connectFuture = _client!.connect(mqttUsername, mqttPassword);
+      final timeoutFuture = Future.delayed(const Duration(seconds: 6), () => throw TimeoutException('Connection timeout', const Duration(seconds: 6)));
       
-      // Wait for connection to establish (like the working method)
-      await Future.delayed(const Duration(milliseconds: 1000));
+      await Future.any([connectFuture, timeoutFuture]);
       
-      // Check connection status (like the working method)
+      // Wait briefly for connection to establish
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Check connection status
       final connected = _client!.connectionStatus?.state == MqttConnectionState.connected;
       
       if (connected) {
@@ -83,14 +99,70 @@ class MqttService {
         _subscribeToTopics();
         return true;
       } else {
-        _logger.e('❌ [MQTT] Connection failed. Status: ${_client!.connectionStatus}');
+        _logger.w('⚠️ [MQTT] Connection attempt completed but not connected');
+        _logger.w('⚠️ [MQTT] Status: ${_client!.connectionStatus}');
         _isConnected = false;
         return false;
       }
-    } catch (e, stackTrace) {
-      _logger.e('❌ [MQTT] Failed to connect to MQTT broker: $e');
-      _logger.e('❌ [MQTT] Stack trace: $stackTrace');
+    } on TimeoutException catch (e) {
+      _logger.w('⚠️ [MQTT] Connection timeout: ${e.message}');
+      _logger.w('⚠️ [MQTT] This is normal if MQTT broker is slow or unavailable');
+      _logger.w('⚠️ [MQTT] App will continue without MQTT functionality');
       _isConnected = false;
+      return false;
+    } catch (e, stackTrace) {
+      // Handle specific socket exceptions more gracefully
+      if (e.toString().contains('semaphore timeout') || 
+          e.toString().contains('SocketException') ||
+          e.toString().contains('timeout')) {
+        _logger.w('⚠️ [MQTT] Network connectivity issue: $e');
+        _logger.w('⚠️ [MQTT] This is normal if MQTT broker is not available on the network');
+        _logger.w('⚠️ [MQTT] App will continue without MQTT functionality');
+      } else {
+        _logger.e('❌ [MQTT] Unexpected connection error: $e');
+        _logger.e('❌ [MQTT] Stack trace: $stackTrace');
+      }
+      _isConnected = false;
+      return false;
+    }
+  }
+
+  // Quick broker reachability test with very short timeout
+  Future<bool> _quickBrokerTest(String address, int port) async {
+    try {
+      _logger.i('🌐 [MQTT] Quick broker test to $address:$port');
+      
+      // Create a test client with very short timeout
+      final testClient = MqttServerClient(address, 'quick_test_${DateTime.now().millisecondsSinceEpoch}');
+      testClient.port = port;
+      testClient.secure = false;
+      testClient.logging(on: false);
+      testClient.connectTimeoutPeriod = 2000; // Very short 2 second timeout
+      
+      // Wrap in timeout
+      final connectFuture = testClient.connect('admin', 'admin');
+      final timeoutFuture = Future.delayed(const Duration(seconds: 3), () => throw TimeoutException('Quick test timeout', const Duration(seconds: 3)));
+      
+      await Future.any([connectFuture, timeoutFuture]);
+      
+      // Brief wait
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final isReachable = testClient.connectionStatus?.state == MqttConnectionState.connected;
+      
+      if (isReachable) {
+        _logger.i('✅ [MQTT] Quick broker test successful');
+        testClient.disconnect();
+      } else {
+        _logger.i('ℹ️ [MQTT] Quick broker test - no connection established');
+      }
+      
+      return isReachable;
+    } on TimeoutException catch (_) {
+      _logger.i('ℹ️ [MQTT] Quick broker test timed out (normal if broker unavailable)');
+      return false;
+    } catch (e) {
+      _logger.i('ℹ️ [MQTT] Quick broker test failed: $e (normal if broker unavailable)');
       return false;
     }
   }

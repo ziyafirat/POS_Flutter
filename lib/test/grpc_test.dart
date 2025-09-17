@@ -409,9 +409,9 @@ class GrpcConnection {
             } catch (e) {
               print('[GrpcConnection] 🔍 Error deserializing: $e');
               // Create a mock response with the transaction ID from server logs
-              final mockResponse = CreateTransactionResponseProto();
-              mockResponse.posTxId = 'TXN-4001F1C3'; // Use the ID from server logs
-              return mockResponse;
+              // final mockResponse = CreateTransactionResponseProto();
+              // mockResponse.posTxId = 'TXN-4001F1C3'; // Use the ID from server logs
+              // return mockResponse;
             }
           }),
         request,

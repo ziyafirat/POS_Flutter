@@ -250,6 +250,18 @@ class AssistantPage extends StatelessWidget {
                     Colors.deepPurple,
                     () => controller.runGrpcTest(),
                   ),
+                  _buildTestButton(
+                    'Test Transaction Flow',
+                    Icons.science,
+                    Colors.teal,
+                    () => controller.testTransactionFlow(),
+                  ),
+                  _buildTestButton(
+                    'Test Persistent Conn',
+                    Icons.link,
+                    Colors.deepOrange,
+                    () => controller.testPersistentConnection(),
+                  ),
                 ],
               ),
             ),

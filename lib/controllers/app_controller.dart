@@ -30,6 +30,10 @@ class AppController extends GetxController {
   final RxString _cardNumber = ''.obs;
   final RxString _customerName = ''.obs;
   final RxInt _loyaltyPoints = 0.obs;
+  final RxString _currentTransactionId = ''.obs;
+  
+  // Persistent gRPC connection for transaction session
+  GrpcConnection? _activeGrpcConnection;
 
   // Getters
   Rx<AppState> get appState => _appState;
@@ -40,7 +44,9 @@ class AppController extends GetxController {
   String get cardNumber => _cardNumber.value;
   String get customerName => _customerName.value;
   int get loyaltyPoints => _loyaltyPoints.value;
+  String get currentTransactionId => _currentTransactionId.value;
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
+  bool get hasActiveTransaction => _currentTransactionId.value.isNotEmpty && _activeGrpcConnection != null;
 
   // Stream subscriptions
   StreamSubscription<AlertMessage>? _alertSubscription;
@@ -55,10 +61,14 @@ class AppController extends GetxController {
   }
 
   @override
-  void onClose() {
+  void onClose() async {
     _alertSubscription?.cancel();
     _grpcService.disconnect();
     _mqttService.disconnect();
+    
+    // Cleanup active gRPC connection
+    await _cleanupGrpcConnection();
+    
     super.onClose();
   }
 
@@ -66,21 +76,52 @@ class AppController extends GetxController {
     try {
       _logger.i('Initializing services...');
       
-      // Connect to gRPC
-      final grpcConnected = await _grpcService.connect();
+      // Connect to gRPC using the real GrpcConnection approach
+      final grpcConnected = await _connectToGrpcServer();
       _updateGrpcStatus(grpcConnected ? ConnectionStatus.connected : ConnectionStatus.error);
 
       // Connect to MQTT
       final mqttConnected = await _mqttService.connect();
       _updateMqttStatus(mqttConnected ? ConnectionStatus.connected : ConnectionStatus.error);
 
-      // If both connections fail, go to error screen
-      if (!grpcConnected && !mqttConnected) {
-        _navigateToScreen(AppScreen.error, errorMessage: 'Connection failed');
+      // Don't go to error screen if gRPC fails, just log it
+      // The user can still use the app and connect later via assistant
+      if (!grpcConnected) {
+        _logger.w('gRPC connection failed at startup, but app can still be used');
+      }
+      if (!mqttConnected) {
+        _logger.w('MQTT connection failed at startup');
       }
     } catch (e) {
       _logger.e('Service initialization failed: $e');
-      _navigateToScreen(AppScreen.error, errorMessage: e.toString());
+      // Don't navigate to error screen, just log and continue
+      _logger.w('Continuing with app startup despite service initialization errors');
+    }
+  }
+
+  Future<bool> _connectToGrpcServer() async {
+    try {
+      _logger.i('🔌 Creating PERSISTENT gRPC connection at app startup...');
+      
+      // Create the SINGLE persistent gRPC connection for the entire app lifecycle
+      _activeGrpcConnection = GrpcConnection("localhost", 50051);
+      await _activeGrpcConnection!.initialize(GrpcLane(
+        companyId: "company",
+        storeId: "paladium",
+        laneId: "lane-05",
+        userName: "user",
+        password: "password",
+      ));
+      
+      _logger.i('✅ PERSISTENT gRPC connection established at startup');
+      _logger.i('🔗 Connection will remain OPEN for entire app lifecycle');
+      _logger.i('📊 Connection hash: ${_activeGrpcConnection.hashCode}');
+      
+      return true;
+    } catch (e) {
+      _logger.e('❌ Failed to create persistent gRPC connection: $e');
+      _activeGrpcConnection = null;
+      return false;
     }
   }
 
@@ -134,7 +175,10 @@ class AppController extends GetxController {
   }
 
   // Navigation methods
-  void navigateToStart() {
+  Future<void> navigateToStart() async {
+    // End current transaction when going back to start
+    _logger.i('🏠 [NAV] Navigating to start - ending current transaction...');
+    await _endCurrentTransaction();
     _navigateToScreen(AppScreen.start);
   }
 
@@ -189,11 +233,230 @@ class AppController extends GetxController {
     _navigateToScreen(AppScreen.assistant);
   }
 
+  // Transaction management
+  Future<void> startTransaction() async {
+    try {
+      _logger.i('🚀 [START] Starting new transaction...');
+      
+      // Clear previous transaction data (but keep connection open)
+      _logger.i('🧹 [START] Clearing previous transaction data...');
+      clearScannedItems();
+      clearCardInfo();
+      clearBags();
+      _currentTransactionId.value = '';
+      
+      // Check if we have the persistent gRPC connection
+      if (_activeGrpcConnection == null) {
+        _logger.e('❌ [START] No persistent gRPC connection available');
+        throw Exception('gRPC connection not available. Please restart the app.');
+      }
+      
+      _logger.i('✅ [START] Using PERSISTENT gRPC connection established at startup');
+      _logger.i('📊 [START] Connection hash: ${_activeGrpcConnection.hashCode}');
+      
+      // Generate unique order ID
+      final scoOrderId = 'SCO_ORDER_${DateTime.now().millisecondsSinceEpoch}';
+      _logger.i('🆔 [START] Generated SCO Order ID: $scoOrderId');
+      
+      // Create transaction using the PERSISTENT connection (established at startup)
+      _logger.i('📝 [START] Creating transaction on PERSISTENT connection...');
+      final posTxId = await _activeGrpcConnection!.createTransaction(scoOrderId);
+      _currentTransactionId.value = posTxId;
+      
+      _logger.i('🎉 [SUCCESS] Transaction created successfully!');
+      _logger.i('🆔 [SUCCESS] POS Transaction ID: $posTxId');
+      _logger.i('🔗 [SUCCESS] Using SAME persistent connection for entire app session');
+      
+      // Update gRPC status to connected since we successfully created transaction
+      _updateGrpcStatus(ConnectionStatus.connected);
+      
+      // Navigate to item scan page on success
+      navigateToItemScan();
+      
+    } catch (e) {
+      _logger.e('💥 [ERROR] Failed to start transaction: $e');
+      _logger.e('🔍 [ERROR] Error type: ${e.runtimeType}');
+      // Update gRPC status to error (but don't close connection)
+      _updateGrpcStatus(ConnectionStatus.error);
+      navigateToError(errorMessage: 'Failed to start transaction: $e');
+    }
+  }
+
+  // Helper method to end current transaction (but keep connection open)
+  Future<void> _endCurrentTransaction() async {
+    _logger.i('🧹 [CLEANUP] Ending current transaction (keeping connection open)...');
+    
+    // Clear transaction data only
+    clearScannedItems();
+    clearCardInfo();
+    clearBags();
+    _currentTransactionId.value = '';
+    _logger.i('🧹 [CLEANUP] Cleared transaction data');
+    _logger.i('🔗 [CLEANUP] Persistent gRPC connection remains OPEN');
+    
+    // DO NOT cleanup the gRPC connection - it stays open for app lifecycle
+  }
+
+  // Helper method to cleanup gRPC connection (only called when app closes)
+  Future<void> _cleanupGrpcConnection() async {
+    if (_activeGrpcConnection != null) {
+      try {
+        _logger.i('🔌 [CLEANUP] Shutting down persistent gRPC connection (app closing)...');
+        await _activeGrpcConnection!.shutdown();
+        _logger.i('✅ [CLEANUP] Persistent gRPC connection closed successfully');
+      } catch (e) {
+        _logger.w('⚠️ [CLEANUP] Error shutting down gRPC connection: $e');
+      } finally {
+        _activeGrpcConnection = null;
+        _logger.i('🗑️ [CLEANUP] gRPC connection object cleared');
+      }
+    } else {
+      _logger.i('ℹ️ [CLEANUP] No persistent gRPC connection to cleanup');
+    }
+  }
+
   // Item management
   void addScannedItem(String itemId) {
     _scannedItems.add(itemId);
     _totalAmount.value += 10.0; // Mock price
     _logger.i('Added item: $itemId, Total: ${_totalAmount.value}');
+  }
+
+  Future<void> addItemViaGrpc(String barcode, {int quantity = 1}) async {
+    try {
+      _logger.i('🔍 [ITEM] Adding item via PERSISTENT gRPC connection...');
+      _logger.i('🔍 [ITEM] Barcode: $barcode, Quantity: $quantity');
+      _logger.i('🔍 [ITEM] Current transaction ID: "${_currentTransactionId.value}"');
+      
+      // Check if we have an active transaction and the persistent connection
+      if (_currentTransactionId.value.isEmpty) {
+        _logger.e('❌ [ITEM] Cannot add item - no active transaction ID');
+        throw Exception('No active transaction. Please start a new transaction first.');
+      }
+      
+      if (_activeGrpcConnection == null) {
+        _logger.e('❌ [ITEM] Cannot add item - no persistent gRPC connection');
+        throw Exception('No persistent gRPC connection. Please restart the app.');
+      }
+      
+      _logger.i('✅ [ITEM] Using SAME persistent connection from startup');
+      _logger.i('📊 [ITEM] Connection hash: ${_activeGrpcConnection.hashCode}');
+      _logger.i('🔗 [ITEM] Connection details: ${_activeGrpcConnection!.host}:${_activeGrpcConnection!.port}');
+      
+      // Add item by quantity using the SAME persistent connection
+      _logger.i('📦 [ITEM] Calling addItemByQuantity on PERSISTENT connection...');
+      await _activeGrpcConnection!.addItemByQuantity(_currentTransactionId.value, barcode, quantity);
+      _logger.i('✅ [ITEM] addItemByQuantity call completed successfully');
+      
+      // Add to local list for UI display
+      _scannedItems.add(barcode);
+      _logger.i('✅ [ITEM] Added to local scanned items list');
+      
+      // Get updated totals from server using the SAME persistent connection
+      _logger.i('💰 [ITEM] Getting updated totals from SAME persistent connection...');
+      final totals = await _activeGrpcConnection!.getTotals(_currentTransactionId.value);
+      _totalAmount.value = totals.total;
+      _logger.i('✅ [ITEM] Updated totals received: ${totals.total}');
+      
+      _logger.i('🎉 [SUCCESS] Item added successfully via PERSISTENT gRPC connection: $barcode');
+      _logger.i('💰 [SUCCESS] Updated total: ${totals.total}');
+      
+    } catch (e) {
+      _logger.e('💥 [ERROR] Failed to add item via gRPC: $e');
+      _logger.e('🔍 [ERROR] Error type: ${e.runtimeType}');
+      _logger.e('🔍 [ERROR] Full error details: $e');
+      
+      // If the error suggests the transaction is invalid, clear our state
+      if (e.toString().contains('No active transaction found') || 
+          e.toString().contains('POS_SERVICE_EXCEPTION') ||
+          e.toString().contains('does not match the active transaction')) {
+        _logger.w('⚠️ [RECOVERY] Transaction appears to be invalid on server, clearing local state');
+        await _endCurrentTransaction();
+        throw Exception('Transaction expired. Please start a new transaction.');
+      }
+      
+      throw Exception('Failed to add item: $e');
+    }
+  }
+
+  // Debug method to check transaction status
+  void debugTransactionStatus() {
+    _logger.i('🔍 [DEBUG] === TRANSACTION STATUS ===');
+    _logger.i('🔍 [DEBUG] Transaction ID: "${_currentTransactionId.value}"');
+    _logger.i('🔍 [DEBUG] Transaction ID empty: ${_currentTransactionId.value.isEmpty}');
+    _logger.i('🔍 [DEBUG] Active gRPC connection exists: ${_activeGrpcConnection != null}');
+    _logger.i('🔍 [DEBUG] Has active transaction: $hasActiveTransaction');
+    _logger.i('🔍 [DEBUG] gRPC status: ${_appState.value.grpcStatus}');
+    if (_activeGrpcConnection != null) {
+      _logger.i('🔍 [DEBUG] Connection host: ${_activeGrpcConnection!.host}');
+      _logger.i('🔍 [DEBUG] Connection port: ${_activeGrpcConnection!.port}');
+    }
+    _logger.i('🔍 [DEBUG] === END STATUS ===');
+  }
+
+  // Test method to reproduce the exact working scenario
+  Future<void> testTransactionFlow() async {
+    try {
+      _logger.i('🧪 [TEST] Starting transaction flow test...');
+      
+      // Create fresh connection (exactly like working example)
+      final grpc = GrpcConnection("localhost", 50051);
+      
+      _logger.i('🧪 [TEST] Initializing connection...');
+      await grpc.initialize(GrpcLane(
+        companyId: "company",
+        storeId: "paladium",
+        laneId: "lane-05",
+        userName: "user",
+        password: "password",
+      ));
+      
+      _logger.i('🧪 [TEST] Creating transaction...');
+      final txId = await grpc.createTransaction("SCO_ORDER_TEST_${DateTime.now().millisecondsSinceEpoch}");
+      _logger.i('🧪 [TEST] Transaction created: $txId');
+      
+      _logger.i('🧪 [TEST] Adding item...');
+      await grpc.addItemByQuantity(txId, "NORMAL_ITEM_WITH_NO_WEIGHT_DEFINED", 1);
+      _logger.i('🧪 [TEST] Item added successfully');
+      
+      _logger.i('🧪 [TEST] Getting totals...');
+      final totals = await grpc.getTotals(txId);
+      _logger.i('🧪 [TEST] Totals: ${totals.total}');
+      
+      _logger.i('🧪 [TEST] Shutting down...');
+      await grpc.shutdown();
+      
+      _logger.i('✅ [TEST] Transaction flow test completed successfully!');
+      
+    } catch (e) {
+      _logger.e('❌ [TEST] Transaction flow test failed: $e');
+    }
+  }
+
+  // Test our persistent connection immediately after creation
+  Future<void> testPersistentConnection() async {
+    try {
+      _logger.i('🧪 [PERSIST] Testing persistent connection immediately...');
+      
+      if (_activeGrpcConnection == null || _currentTransactionId.value.isEmpty) {
+        _logger.e('❌ [PERSIST] No active connection or transaction');
+        return;
+      }
+      
+      _logger.i('🧪 [PERSIST] Using connection hash: ${_activeGrpcConnection.hashCode}');
+      _logger.i('🧪 [PERSIST] Transaction ID: ${_currentTransactionId.value}');
+      
+      _logger.i('🧪 [PERSIST] Adding test item immediately...');
+      await _activeGrpcConnection!.addItemByQuantity(
+        _currentTransactionId.value, 
+        "NORMAL_ITEM_WITH_NO_WEIGHT_DEFINED", 
+        1
+      );
+      _logger.i('✅ [PERSIST] Item added successfully with persistent connection!');
+      
+    } catch (e) {
+      _logger.e('❌ [PERSIST] Persistent connection test failed: $e');
+    }
   }
 
   void clearScannedItems() {
@@ -367,7 +630,7 @@ class AppController extends GetxController {
 
   Future<void> testServerRunning() async {
     _logger.i('🔍 Testing if server is running...');
-    final isRunning = await _grpcService.isServerRunning();
+    final isRunning = _grpcService.isServerRunning();
     
     if (isRunning) {
       _logger.i('✅ Server is running at localhost:50051');
@@ -468,7 +731,7 @@ await grpc.initialize(GrpcLane(
   password: "password"));
 
 final txId = await grpc.createTransaction("SCO_ORDER_12345");
-await grpc.setCustomer(txId, "5322100000");
+// await grpc.setCustomer(txId, "5322100000");
 await grpc.addItemByQuantity(txId, "NORMAL_ITEM_WITH_NO_WEIGHT_DEFINED", 2);
 
 final totals = await grpc.getTotals(txId);
