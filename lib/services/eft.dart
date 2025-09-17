@@ -97,7 +97,7 @@ class TxnMessage {
 
 class NiVm extends GetxController {
   static const String address = '127.0.0.1';
-  static const int port = 57486; // Update to actual EFT server port
+  static const int port = 9000; // Update to actual EFT server port
   Socket? _socket;
 
   Stream<Uint8List>? _socketStream;

@@ -205,25 +205,81 @@ class UsbPrinterService extends GetxController {
   /// Test printer connection
   Future<bool> testPrint() async {
     try {
-      _logger.i('Testing printer with sample text...');
+      _logger.i('🖨️ Testing printer with sample text...');
+      print('🖨️ PRINTER DEBUG: Starting test print...');
+      
+      // First, try to connect to the printer
+      _logger.i('🖨️ Ensuring printer connection...');
+      final connected = await connectToPrinter();
+      
+      if (!connected) {
+        _logger.e('🖨️ Failed to connect to printer for test');
+        print('🖨️ PRINTER DEBUG: Connection failed');
+        return false;
+      }
+      
+      print('🖨️ PRINTER DEBUG: Connection successful, generating test text...');
       
       final now = DateTime.now();
       final testText = '''
 === PRINTER TEST ===
-Date: $now
-Time: ${now.toString().substring(11, 19)}
+Date: ${now.day}/${now.month}/${now.year}
+Time: ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}
+Device: Epson TM-M30
 Status: Working
 ==================
+Test completed successfully!
 ''';
       
-      return await printReceipt(testText);
+      print('🖨️ PRINTER DEBUG: Test text generated, calling printReceipt...');
+      final result = await printReceipt(testText);
+      
+      if (result) {
+        print('🖨️ PRINTER DEBUG: Test print completed successfully');
+      } else {
+        print('🖨️ PRINTER DEBUG: Test print failed');
+      }
+      
+      return result;
       
     } catch (e) {
-      _logger.e('Printer test failed: $e');
+      _logger.e('🖨️ Printer test failed: $e');
+      print('🖨️ PRINTER DEBUG: Test print exception: $e');
       return false;
     }
   }
   
+  /// Validate USB connection before printing
+  Future<bool> validateConnection() async {
+    try {
+      _logger.i('🖨️ Validating USB printer connection...');
+      print('🖨️ PRINTER DEBUG: Validating connection...');
+      
+      if (!_isConnected.value) {
+        print('🖨️ PRINTER DEBUG: Not connected, attempting to connect...');
+        return await connectToPrinter();
+      }
+      
+      // Test the connection by checking device availability
+      final result = await _channel.invokeMethod('validateConnection');
+      
+      if (result != null && result is Map && result['success'] == true) {
+        print('🖨️ PRINTER DEBUG: Connection validation successful');
+        return true;
+      } else {
+        print('🖨️ PRINTER DEBUG: Connection validation failed, reconnecting...');
+        _isConnected.value = false;
+        return await connectToPrinter();
+      }
+      
+    } catch (e) {
+      _logger.e('🖨️ Connection validation failed: $e');
+      print('🖨️ PRINTER DEBUG: Validation exception: $e');
+      _isConnected.value = false;
+      return false;
+    }
+  }
+
   /// Get printer status information
   Map<String, dynamic> getPrinterStatus() {
     return {

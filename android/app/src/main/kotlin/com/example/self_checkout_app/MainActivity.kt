@@ -49,6 +49,9 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_ARGUMENT", "Print data is null", null)
                     }
                 }
+                "validateConnection" -> {
+                    validateConnection(result)
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -125,48 +128,71 @@ class MainActivity : FlutterActivity() {
 
     private fun establishConnection(result: MethodChannel.Result, printerName: String) {
         try {
+            println("🖨️ ANDROID DEBUG: Establishing USB connection...")
+            println("🖨️ ANDROID DEBUG: Device VID:${usbDevice?.vendorId} PID:${usbDevice?.productId}")
+            
             usbConnection = usbManager?.openDevice(usbDevice)
             
             if (usbConnection == null) {
+                println("🖨️ ANDROID DEBUG: Failed to open USB device")
                 result.success(mapOf("success" to false, "error" to "Failed to open USB connection"))
                 return
             }
+            
+            println("🖨️ ANDROID DEBUG: USB device opened successfully")
 
             // Get the first interface (usually the printer interface)
             usbInterface = usbDevice?.getInterface(0)
             
             if (usbInterface == null) {
+                println("🖨️ ANDROID DEBUG: No USB interface found")
                 result.success(mapOf("success" to false, "error" to "No USB interface found"))
                 return
             }
+            
+            println("🖨️ ANDROID DEBUG: USB interface found: ${usbInterface!!.interfaceClass}")
 
             // Claim the interface
+            println("🖨️ ANDROID DEBUG: Claiming USB interface...")
             if (!usbConnection!!.claimInterface(usbInterface, true)) {
+                println("🖨️ ANDROID DEBUG: Failed to claim USB interface")
                 result.success(mapOf("success" to false, "error" to "Failed to claim USB interface"))
                 return
             }
+            
+            println("🖨️ ANDROID DEBUG: USB interface claimed successfully")
 
             // Find the OUT endpoint for sending data to printer
+            println("🖨️ ANDROID DEBUG: Searching for OUT endpoint...")
             for (i in 0 until usbInterface!!.endpointCount) {
                 val endpoint = usbInterface!!.getEndpoint(i)
+                println("🖨️ ANDROID DEBUG: Endpoint $i - Direction: ${endpoint.direction}, Type: ${endpoint.type}")
                 if (endpoint.direction == UsbConstants.USB_DIR_OUT) {
                     usbEndpoint = endpoint
+                    println("🖨️ ANDROID DEBUG: Found OUT endpoint at index $i")
                     break
                 }
             }
 
             if (usbEndpoint == null) {
+                println("🖨️ ANDROID DEBUG: No OUT endpoint found")
                 result.success(mapOf("success" to false, "error" to "No OUT endpoint found"))
                 return
             }
+            
+            println("🖨️ ANDROID DEBUG: Connection established successfully")
+            println("🖨️ ANDROID DEBUG: Endpoint max packet size: ${usbEndpoint!!.maxPacketSize}")
 
             result.success(mapOf(
                 "success" to true, 
                 "printerName" to printerName,
-                "deviceInfo" to "VID:${usbDevice?.vendorId} PID:${usbDevice?.productId}"
+                "deviceInfo" to "VID:${usbDevice?.vendorId} PID:${usbDevice?.productId}",
+                "endpointInfo" to "MaxPacket:${usbEndpoint!!.maxPacketSize}"
             ))
 
         } catch (e: Exception) {
+            println("🖨️ ANDROID DEBUG: Exception in establishConnection: ${e.message}")
+            e.printStackTrace()
             result.success(mapOf("success" to false, "error" to "Connection establishment failed: ${e.message}"))
         }
     }
@@ -189,22 +215,95 @@ class MainActivity : FlutterActivity() {
 
     private fun printData(data: ByteArray, result: MethodChannel.Result) {
         try {
-            if (usbConnection == null || usbEndpoint == null) {
-                result.success(mapOf("success" to false, "error" to "Printer not connected"))
+            println("🖨️ ANDROID DEBUG: Starting printData...")
+            println("🖨️ ANDROID DEBUG: Data size: ${data.size} bytes")
+            
+            if (usbConnection == null) {
+                println("🖨️ ANDROID DEBUG: USB connection is null")
+                result.success(mapOf("success" to false, "error" to "USB connection is null"))
                 return
             }
-
+            
+            if (usbEndpoint == null) {
+                println("🖨️ ANDROID DEBUG: USB endpoint is null")
+                result.success(mapOf("success" to false, "error" to "USB endpoint is null"))
+                return
+            }
+            
+            println("🖨️ ANDROID DEBUG: USB connection and endpoint are valid")
+            println("🖨️ ANDROID DEBUG: Endpoint direction: ${usbEndpoint!!.direction}")
+            println("🖨️ ANDROID DEBUG: Endpoint type: ${usbEndpoint!!.type}")
+            
+            // Check if connection is still valid
+            if (!usbConnection!!.claimInterface(usbInterface, true)) {
+                println("🖨️ ANDROID DEBUG: Failed to re-claim interface")
+                result.success(mapOf("success" to false, "error" to "Failed to claim USB interface"))
+                return
+            }
+            
+            println("🖨️ ANDROID DEBUG: Interface claimed successfully")
+            
             val timeout = 5000 // 5 seconds timeout
+            println("🖨️ ANDROID DEBUG: Attempting bulkTransfer with timeout: $timeout ms")
+            
             val bytesTransferred = usbConnection!!.bulkTransfer(usbEndpoint, data, data.size, timeout)
             
+            println("🖨️ ANDROID DEBUG: bulkTransfer completed")
+            println("🖨️ ANDROID DEBUG: Bytes transferred: $bytesTransferred")
+            
             if (bytesTransferred >= 0) {
+                println("🖨️ ANDROID DEBUG: Transfer successful")
                 result.success(mapOf("success" to true, "bytesTransferred" to bytesTransferred))
             } else {
-                result.success(mapOf("success" to false, "error" to "Data transfer failed: $bytesTransferred"))
+                println("🖨️ ANDROID DEBUG: Transfer failed with code: $bytesTransferred")
+                when (bytesTransferred) {
+                    -1 -> result.success(mapOf("success" to false, "error" to "Transfer timeout or device disconnected"))
+                    -2 -> result.success(mapOf("success" to false, "error" to "Transfer failed - device busy"))
+                    else -> result.success(mapOf("success" to false, "error" to "Data transfer failed with code: $bytesTransferred"))
+                }
             }
             
         } catch (e: Exception) {
+            println("🖨️ ANDROID DEBUG: Exception in printData: ${e.message}")
+            println("🖨️ ANDROID DEBUG: Exception type: ${e.javaClass.simpleName}")
+            e.printStackTrace()
             result.success(mapOf("success" to false, "error" to "Print failed: ${e.message}"))
+        }
+    }
+
+    private fun validateConnection(result: MethodChannel.Result) {
+        try {
+            println("🖨️ ANDROID DEBUG: Validating USB connection...")
+            
+            if (usbConnection == null || usbDevice == null || usbEndpoint == null) {
+                println("🖨️ ANDROID DEBUG: Connection components missing")
+                result.success(mapOf("success" to false, "error" to "Connection not established"))
+                return
+            }
+            
+            // Check if device is still attached
+            val deviceList = usbManager?.deviceList
+            var deviceFound = false
+            deviceList?.values?.forEach { device ->
+                if (device.deviceId == usbDevice!!.deviceId) {
+                    deviceFound = true
+                    return@forEach
+                }
+            }
+            
+            if (!deviceFound) {
+                println("🖨️ ANDROID DEBUG: USB device no longer attached")
+                result.success(mapOf("success" to false, "error" to "USB device disconnected"))
+                return
+            }
+            
+            println("🖨️ ANDROID DEBUG: Connection validation successful")
+            result.success(mapOf("success" to true, "deviceId" to usbDevice!!.deviceId))
+            
+        } catch (e: Exception) {
+            println("🖨️ ANDROID DEBUG: Exception in validateConnection: ${e.message}")
+            e.printStackTrace()
+            result.success(mapOf("success" to false, "error" to "Validation failed: ${e.message}"))
         }
     }
 }
