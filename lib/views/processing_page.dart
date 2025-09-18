@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
+import '../widgets/almaya_header.dart';
 
 class ProcessingPage extends StatefulWidget {
   const ProcessingPage({super.key});
@@ -39,91 +40,95 @@ class _ProcessingPageState extends State<ProcessingPage>
 
     return Scaffold(
       backgroundColor: Colors.blue[50],
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Processing Animation
-            AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                return Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.blue.withOpacity(0.1 + (_animation.value * 0.3)),
-                    border: Border.all(
-                      color: Colors.blue.withOpacity(0.3 + (_animation.value * 0.4)),
-                      width: 3,
+      body: Column(
+        children: [
+          const AlmayaHeader(pageTitle: 'PROCESSING'),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Processing Animation
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) {
+                      return Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blue.withOpacity(
+                            0.1 + (_animation.value * 0.3),
+                          ),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(
+                              0.3 + (_animation.value * 0.4),
+                            ),
+                            width: 3,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.payment,
+                          size: 60,
+                          color: Colors.blue,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Processing Text
+                  const Text(
+                    'Processing Payment',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.payment,
-                    size: 60,
-                    color: Colors.blue,
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Please wait while we process your payment...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    textAlign: TextAlign.center,
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 40),
-            
-            // Processing Text
-            const Text(
-              'Processing Payment',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                  const SizedBox(height: 40),
+
+                  // Progress Indicator
+                  SizedBox(
+                    width: 200,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.grey[300],
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Status Text
+                  Obx(
+                    () => Text(
+                      'Status: ${controller.appState.value.mqttStatus.name}',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 60),
+
+                  // Cancel Button (if needed)
+                  TextButton(
+                    onPressed: () {
+                      controller.navigateToPayment();
+                    },
+                    child: const Text(
+                      'Cancel Payment',
+                      style: TextStyle(fontSize: 16, color: Colors.red),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            
-            const Text(
-              'Please wait while we process your payment...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            
-            // Progress Indicator
-            SizedBox(
-              width: 200,
-              child: LinearProgressIndicator(
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Status Text
-            Obx(() => Text(
-              'Status: ${controller.appState.value.mqttStatus.name}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            )),
-            const SizedBox(height: 60),
-            
-            // Cancel Button (if needed)
-            TextButton(
-              onPressed: () {
-                controller.navigateToPayment();
-              },
-              child: const Text(
-                'Cancel Payment',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

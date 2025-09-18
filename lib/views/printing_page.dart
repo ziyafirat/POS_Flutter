@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
+import '../widgets/almaya_header.dart';
 
 class PrintingPage extends StatefulWidget {
   const PrintingPage({super.key});
@@ -29,7 +30,7 @@ class _PrintingPageState extends State<PrintingPage>
       CurvedAnimation(parent: _animationController, curve: Curves.linear),
     );
     _animationController.repeat();
-    
+
     // Start monitoring PosSubState for 1008
     _startPosSubStateMonitoring();
   }
@@ -56,7 +57,7 @@ class _PrintingPageState extends State<PrintingPage>
 
   void _monitorPosSubState() {
     final controller = Get.find<AppController>();
-    
+
     // Check if PosSubState is 1008
     if (controller.posSubState == '1008') {
       // Clear items when PosSubState is 1008
@@ -64,7 +65,7 @@ class _PrintingPageState extends State<PrintingPage>
       controller.navigateToStart();
       return;
     }
-    
+
     // Continue monitoring every 500ms
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
@@ -100,190 +101,193 @@ class _PrintingPageState extends State<PrintingPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-            // Printer Animation or Check Icon
-            _printingCompleted 
-              ? Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                )
-              : AnimatedBuilder(
-                  animation: _rotationAnimation,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _rotationAnimation.value * 2 * 3.14159,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.print,
-                          size: 60,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            const SizedBox(height: 40),
-            
-            // Status Text
-            Text(
-              _printingCompleted 
-                ? (_waitingForPosSubState 
-                    ? langCtrl.waitingForSystemResponse
-                    : langCtrl.thankYouForShopping)
-                : 'Printing Receipt',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: _printingCompleted 
-                  ? (_waitingForPosSubState ? Colors.orange : Colors.green)
-                  : Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Countdown Timer or Waiting Text
-            _printingCompleted 
-              ? (_waitingForPosSubState
-                  ? Column(
-                      children: [
-                        Text(
-                          langCtrl.waitingForPosSubState,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
+              // Printer Animation or Check Icon
+              _printingCompleted
+                  ? Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 60,
+                        color: Colors.white,
+                      ),
                     )
-                  : Column(
-                      children: [
-                        Text(
-                          langCtrl.returningToStart,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
+                  : AnimatedBuilder(
+                      animation: _rotationAnimation,
+                      builder: (context, child) {
+                        return Transform.rotate(
+                          angle: _rotationAnimation.value * 2 * 3.14159,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.print,
+                              size: 60,
+                              color: Colors.blue,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '$_countdown',
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ))
-              : const Text(
-                  'Please wait while we print your receipt...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-            const SizedBox(height: 40),
-            
-            // Receipt Preview
-            Container(
-              width: 250,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[300]!),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'RECEIPT',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                        );
+                      },
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  const Divider(),
-                  const SizedBox(height: 10),
-                  Obx(() => Text('Items: ${controller.scannedItems.length}')),
-                  const SizedBox(height: 5),
-                  Obx(() => Text('Balance: ${controller.totalAmount}')),
-                  const SizedBox(height: 10),
-                  const Divider(),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Thank you for shopping!',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-            
-            // Status
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Printing in progress...',
+              const SizedBox(height: 40),
+
+              // Status Text
+              Text(
+                _printingCompleted
+                    ? (_waitingForPosSubState
+                          ? langCtrl.waitingForSystemResponse
+                          : langCtrl.thankYouForShopping)
+                    : 'Printing Receipt',
                 style: TextStyle(
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: _printingCompleted
+                      ? (_waitingForPosSubState ? Colors.orange : Colors.green)
+                      : Colors.blue,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+
+              // Countdown Timer or Waiting Text
+              _printingCompleted
+                  ? (_waitingForPosSubState
+                        ? Column(
+                            children: [
+                              Text(
+                                langCtrl.waitingForPosSubState,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.orange,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              Text(
+                                langCtrl.returningToStart,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                '$_countdown',
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ))
+                  : const Text(
+                      'Please wait while we print your receipt...',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+              const SizedBox(height: 40),
+
+              // Receipt Preview
+              Container(
+                width: 250,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey[300]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'RECEIPT',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(),
+                    const SizedBox(height: 10),
+                    Obx(() => Text('Items: ${controller.scannedItems.length}')),
+                    const SizedBox(height: 5),
+                    Obx(() => Text('Balance: ${controller.totalAmount}')),
+                    const SizedBox(height: 10),
+                    const Divider(),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Thank you for shopping!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
+
+              // Status
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Printing in progress...',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      )),
+      ),
     );
   }
 }

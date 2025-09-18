@@ -4,7 +4,18 @@ import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
 
 class ProcessingPopup extends StatefulWidget {
-  const ProcessingPopup({super.key});
+  final String? title;
+  final String? message;
+  final IconData? icon;
+  final int? autoCloseSeconds;
+
+  const ProcessingPopup({
+    super.key,
+    this.title,
+    this.message,
+    this.icon,
+    this.autoCloseSeconds,
+  });
 
   @override
   State<ProcessingPopup> createState() => _ProcessingPopupState();
@@ -14,52 +25,48 @@ class _ProcessingPopupState extends State<ProcessingPopup>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
+  bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize pulse animation
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
     // Start animation
     _animationController.repeat(reverse: true);
-    
-    // Auto-close after 3 seconds and show printing popup
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _animationController.dispose();
-        Get.back(); // Close processing popup
-        
-        // Show printing popup
-        Get.dialog(
-          const PrintingPopup(),
-          barrierDismissible: false,
-        );
-      }
-    });
+
+    // Auto-close after specified seconds if provided
+    if (widget.autoCloseSeconds != null && widget.autoCloseSeconds! > 0) {
+      Future.delayed(Duration(seconds: widget.autoCloseSeconds!), () {
+        if (mounted && Get.isDialogOpen == true && !_isDisposed) {
+          Get.back();
+        }
+      });
+    }
+    // Note: No default auto-close behavior - popup management is handled by AppController
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
+    if (_animationController.isAnimating) {
+      _animationController.stop();
+    }
     _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final AppController controller = Get.find<AppController>();
     final LanguageController langController = Get.find<LanguageController>();
 
     return Dialog(
@@ -97,17 +104,18 @@ class _ProcessingPopupState extends State<ProcessingPopup>
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.hourglass_empty,
+                  Icon(
+                    widget.icon ?? Icons.hourglass_empty,
                     color: Colors.white,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      langController.isEnglish 
-                          ? 'Processing Payment'
-                          : 'معالجة الدفع',
+                      widget.title ??
+                          (langController.isEnglish
+                              ? 'Processing Payment'
+                              : 'معالجة الدفع'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -152,14 +160,15 @@ class _ProcessingPopupState extends State<ProcessingPopup>
                         );
                       },
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Processing text
                     Text(
-                      langController.isEnglish
-                          ? 'Processing your payment...'
-                          : 'جاري معالجة دفعتك...',
+                      widget.message ??
+                          (langController.isEnglish
+                              ? 'Processing your payment...'
+                              : 'جاري معالجة دفعتك...'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -167,9 +176,9 @@ class _ProcessingPopupState extends State<ProcessingPopup>
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     Text(
                       langController.isEnglish
                           ? 'Please wait...'
@@ -180,12 +189,14 @@ class _ProcessingPopupState extends State<ProcessingPopup>
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Progress indicator
                     const LinearProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFE31E24),
+                      ),
                       backgroundColor: Color(0xFFE5E7EB),
                     ),
                   ],
@@ -213,14 +224,14 @@ class _PrintingPopupState extends State<PrintingPopup> {
   @override
   void initState() {
     super.initState();
-    
+
     // Simulate printing process
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
           _printingCompleted = true;
         });
-        
+
         // Start countdown
         _startCountdown();
       }
@@ -233,7 +244,7 @@ class _PrintingPopupState extends State<PrintingPopup> {
         setState(() {
           _countdown--;
         });
-        
+
         if (_countdown > 0) {
           _startCountdown();
         } else {
@@ -248,7 +259,6 @@ class _PrintingPopupState extends State<PrintingPopup> {
 
   @override
   Widget build(BuildContext context) {
-    final AppController controller = Get.find<AppController>();
     final LanguageController langController = Get.find<LanguageController>();
 
     return Dialog(
@@ -277,7 +287,7 @@ class _PrintingPopupState extends State<PrintingPopup> {
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: _printingCompleted 
+                  colors: _printingCompleted
                       ? [Colors.green, Colors.green.shade700]
                       : [const Color(0xFFE31E24), const Color(0xFFC41E3A)],
                 ),
@@ -297,8 +307,12 @@ class _PrintingPopupState extends State<PrintingPopup> {
                   Expanded(
                     child: Text(
                       _printingCompleted
-                          ? (langController.isEnglish ? 'Receipt Printed' : 'تم طباعة الإيصال')
-                          : (langController.isEnglish ? 'Printing Receipt' : 'طباعة الإيصال'),
+                          ? (langController.isEnglish
+                                ? 'Receipt Printed'
+                                : 'تم طباعة الإيصال')
+                          : (langController.isEnglish
+                                ? 'Printing Receipt'
+                                : 'طباعة الإيصال'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -322,55 +336,71 @@ class _PrintingPopupState extends State<PrintingPopup> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: (_printingCompleted ? Colors.green : const Color(0xFFE31E24)).withOpacity(0.1),
+                        color:
+                            (_printingCompleted
+                                    ? Colors.green
+                                    : const Color(0xFFE31E24))
+                                .withOpacity(0.1),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _printingCompleted ? Colors.green : const Color(0xFFE31E24),
+                          color: _printingCompleted
+                              ? Colors.green
+                              : const Color(0xFFE31E24),
                           width: 3,
                         ),
                       ),
                       child: Icon(
                         _printingCompleted ? Icons.check : Icons.receipt_long,
                         size: 40,
-                        color: _printingCompleted ? Colors.green : const Color(0xFFE31E24),
+                        color: _printingCompleted
+                            ? Colors.green
+                            : const Color(0xFFE31E24),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Status text
                     Text(
                       _printingCompleted
                           ? langController.thankYouForShopping
-                          : (langController.isEnglish ? 'Printing Receipt' : 'طباعة الإيصال'),
+                          : (langController.isEnglish
+                                ? 'Printing Receipt'
+                                : 'طباعة الإيصال'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _printingCompleted ? Colors.green : const Color(0xFF374151),
+                        color: _printingCompleted
+                            ? Colors.green
+                            : const Color(0xFF374151),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     // Countdown or processing text
                     Text(
                       _printingCompleted
                           ? '${langController.returningToStart} $_countdown...'
-                          : (langController.isEnglish ? 'Please wait...' : 'يرجى الانتظار...'),
+                          : (langController.isEnglish
+                                ? 'Please wait...'
+                                : 'يرجى الانتظار...'),
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6B7280),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Progress indicator or countdown
                     if (!_printingCompleted)
                       const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFFE31E24),
+                        ),
                       )
                     else
                       Container(

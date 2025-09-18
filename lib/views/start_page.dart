@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
+import '../widgets/almaya_header.dart';
 
 class StartPage extends StatelessWidget {
   const StartPage({super.key});
@@ -15,147 +16,31 @@ class StartPage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Header with Almaya logo and buttons (10% of screen)
-          Container(
-            height: MediaQuery.of(context).size.height * 0.1,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [Color(0xFFE31E24), Color(0xFFC41E3A)], // Almaya red colors
-              ),
-            ),
-            child: Row(
-              children: [
-                // Almaya Logo (Left side)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'A',
-                            style: TextStyle(
-                              color: Color(0xFFE31E24),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'almaya',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'supermarket',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Spacer to push buttons to right
-                const Spacer(),
-                // Right side buttons
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      // Language Button (compact)
-                      SizedBox(
-                        width: 80,
-                        height: 40,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            langController.toggleLanguage();
-                          },
-                          icon: const Icon(Icons.language, size: 16),
-                          label: Obx(() => Text(
-                            langController.languageButtonText,
-                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
-                          )),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Call for Help Button (compact)
-                      SizedBox(
-                        width: 80,
-                        height: 40,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Help functionality
-                          },
-                          icon: const Icon(Icons.help, size: 16),
-                          label: Obx(() => Text(
-                            langController.callHelp,
-                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
-                          )),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange.withOpacity(0.9),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Header with Almaya logo
+          AlmayaHeader(height: MediaQuery.of(context).size.height * 0.1),
           // Main Content Area (55% of screen)
           Expanded(
             flex: 55,
             child: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   // Main promotional image area
-            Container(
+                  Container(
                     margin: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
                         ),
@@ -200,33 +85,37 @@ class StartPage extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(60),
-              ),
-              child: const Icon(
-                Icons.shopping_cart,
+                                    ),
+                                    child: const Icon(
+                                      Icons.shopping_cart,
                                       size: 60,
                                       color: Colors.white,
                                     ),
                                   ),
                                   const SizedBox(height: 20),
                                   // Welcome text
-                                  Obx(() => Text(
-                                    langController.welcomeTitle,
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-                                    textAlign: TextAlign.center,
-                                  )),
-            const SizedBox(height: 10),
-                                  Obx(() => Text(
-                                    langController.welcomeSubtitle,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                color: Colors.white70,
+                                  Obx(
+                                    () => Text(
+                                      langController.welcomeTitle,
+                                      style: const TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    textAlign: TextAlign.center,
-                                  )),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Obx(
+                                    () => Text(
+                                      langController.welcomeSubtitle,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white70,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -256,34 +145,36 @@ class StartPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Start Shopping Button (Primary Action)
-            SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     height: 60,
-              child: ElevatedButton(
-                onPressed: () {
-                  controller.navigateToItemScan();
-                },
-                style: ElevatedButton.styleFrom(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        controller.navigateToItemScan();
+                      },
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE31E24), // Almaya red
                         foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 8,
-                  shadowColor: Colors.black26,
-                ),
+                        ),
+                        elevation: 8,
+                        shadowColor: Colors.black26,
+                      ),
                       child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           const Icon(Icons.shopping_cart, size: 28),
                           const SizedBox(width: 12),
-                          Obx(() => Text(
-                            langController.startShopping,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Obx(
+                            () => Text(
+                              langController.startShopping,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          )),
+                          ),
                         ],
                       ),
                     ),
@@ -292,7 +183,7 @@ class StartPage extends StatelessWidget {
               ),
             ),
           ),
-          ],
+        ],
       ),
     );
   }

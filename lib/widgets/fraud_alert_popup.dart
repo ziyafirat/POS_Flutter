@@ -23,32 +23,25 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize slide animation
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.elasticOut,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
+        );
 
     // Initialize pulse animation
     _pulseController = AnimationController(
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
     // Start animations
     _slideController.forward();
@@ -144,15 +137,6 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    alert.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
                                 ],
                               ),
                             ),
@@ -164,10 +148,7 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                               margin: const EdgeInsets.all(15),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.red,
-                                  width: 2,
-                                ),
+                                border: Border.all(color: Colors.red, width: 2),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
@@ -175,20 +156,7 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                               ),
                             ),
 
-                            // Message
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              child: Text(
-                                alert.message,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 10),
 
                             // Alert info
                             Container(
@@ -201,9 +169,12 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                                 color: Colors.grey[900],
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Type: ${alert.type.name.toUpperCase()}',
@@ -235,14 +206,19 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                                     child: ElevatedButton(
                                       onPressed: () {
                                         controller.dismissAlert();
-                                        controller.navigateToStart(); // Navigate back to start after dismissing
+                                        controller
+                                            .navigateToStart(); // Navigate back to start after dismissing
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
                                       child: const Text(
@@ -263,9 +239,13 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.orange,
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
                                       child: const Text(
@@ -303,7 +283,7 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
       try {
         // Decode base64 image data
         final Uint8List imageBytes = base64Decode(alert.imageData!);
-        
+
         return Container(
           decoration: BoxDecoration(
             border: Border.all(color: Colors.red, width: 2),
@@ -321,18 +301,11 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.broken_image,
-                          color: Colors.red,
-                          size: 40,
-                        ),
+                        Icon(Icons.broken_image, color: Colors.red, size: 40),
                         SizedBox(height: 10),
                         Text(
                           'Image Error',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ],
                     ),
@@ -350,18 +323,11 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error,
-                  color: Colors.red,
-                  size: 40,
-                ),
+                Icon(Icons.error, color: Colors.red, size: 40),
                 SizedBox(height: 10),
                 Text(
                   'Invalid Image Data',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ],
             ),
@@ -387,10 +353,7 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
                 SizedBox(height: 10),
                 Text(
                   'Loading...',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ],
             ),
@@ -410,11 +373,7 @@ class _FraudAlertPopupState extends State<FraudAlertPopup>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.security,
-              color: Colors.red,
-              size: 50,
-            ),
+            Icon(Icons.security, color: Colors.red, size: 50),
             SizedBox(height: 10),
             Text(
               'FRAUD DETECTED',

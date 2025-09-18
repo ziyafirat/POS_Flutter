@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import '../controllers/app_controller.dart';
+import '../models/alert_message.dart';
 
 class AlertPage extends StatefulWidget {
   const AlertPage({super.key});
@@ -23,7 +24,7 @@ class _AlertPageState extends State<AlertPage> {
   Future<void> _initializeVideo() async {
     final AppController controller = Get.find<AppController>();
     final alert = controller.currentAlert;
-    
+
     if (alert?.videoUrl != null) {
       try {
         _videoController = VideoPlayerController.networkUrl(
@@ -82,11 +83,7 @@ class _AlertPageState extends State<AlertPage> {
               ),
               child: Column(
                 children: [
-                  const Icon(
-                    Icons.warning,
-                    color: Colors.white,
-                    size: 40,
-                  ),
+                  const Icon(Icons.warning, color: Colors.white, size: 40),
                   const SizedBox(height: 10),
                   Text(
                     alert.title,
@@ -98,18 +95,20 @@ class _AlertPageState extends State<AlertPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    alert.message,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
+                  // Only show message for non-fraud alerts
+                  if (alert.type != AlertType.fraud)
+                    Text(
+                      alert.message,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
                 ],
               ),
             ),
-            
+
             // Video Player
             Expanded(
               child: Container(
@@ -142,7 +141,7 @@ class _AlertPageState extends State<AlertPage> {
                       ),
               ),
             ),
-            
+
             // Alert Info
             Container(
               width: double.infinity,
@@ -177,15 +176,12 @@ class _AlertPageState extends State<AlertPage> {
                   const SizedBox(height: 10),
                   Text(
                     'Time: ${alert.timestamp.toString()}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
             ),
-            
+
             // Dismiss Button
             Container(
               width: double.infinity,
@@ -204,10 +200,7 @@ class _AlertPageState extends State<AlertPage> {
                 ),
                 child: const Text(
                   'Dismiss Alert',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

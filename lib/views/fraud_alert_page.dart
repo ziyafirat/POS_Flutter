@@ -20,32 +20,24 @@ class _FraudAlertPageState extends State<FraudAlertPage>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize pulse animation
     _pulseController = AnimationController(
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
     // Initialize shake animation
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _shakeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 10.0,
-    ).animate(CurvedAnimation(
-      parent: _shakeController,
-      curve: Curves.elasticIn,
-    ));
+    _shakeAnimation = Tween<double>(begin: 0.0, end: 10.0).animate(
+      CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
+    );
 
     // Start animations
     _pulseController.repeat(reverse: true);
@@ -86,11 +78,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.red[900]!,
-                    Colors.red[800]!,
-                    Colors.black,
-                  ],
+                  colors: [Colors.red[900]!, Colors.red[800]!, Colors.black],
                 ),
               ),
             ),
@@ -145,24 +133,6 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 15),
-                            Text(
-                              alert.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              alert.message,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
                           ],
                         ),
                       ),
@@ -177,10 +147,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                     margin: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: Colors.red,
-                        width: 3,
-                      ),
+                      border: Border.all(color: Colors.red, width: 3),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.red.withOpacity(0.3),
@@ -240,62 +207,63 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                   ),
                 ),
 
-                            // Action Buttons
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(20),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        controller.dismissAlert();
-                                        controller.navigateToStart(); // Navigate back to start after dismissing
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 15),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'Close Alert',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        // Call security or report function
-                                        _reportFraud();
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orange,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 15),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'Report',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                // Action Buttons
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            controller.dismissAlert();
+                            controller
+                                .navigateToStart(); // Navigate back to start after dismissing
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                          ),
+                          child: const Text(
+                            'Close Alert',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Call security or report function
+                            _reportFraud();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            'Report',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ],
@@ -325,10 +293,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                 SizedBox(height: 20),
                 Text(
                   'Loading Alert Image...',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ],
             ),
@@ -348,11 +313,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.security,
-              color: Colors.red,
-              size: 80,
-            ),
+            Icon(Icons.security, color: Colors.red, size: 80),
             SizedBox(height: 20),
             Text(
               'FRAUD DETECTED',
@@ -366,10 +327,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
             SizedBox(height: 10),
             Text(
               'Security Alert Active',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
           ],
         ),
@@ -397,10 +355,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -414,13 +369,8 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                 duration: const Duration(seconds: 3),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text(
-              'Report',
-              style: TextStyle(color: Colors.white),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Report', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

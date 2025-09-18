@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:get/get.dart';
 import 'mqtt_test.dart';
+import 'scanner_test.dart';
+import 'popup_test.dart';
+import '../services/scanner_service.dart';
 
 /// Simple Widget to test MQTT functionality
 class MqttTestWidget extends StatefulWidget {
@@ -31,7 +34,7 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
       setState(() {
         _messages.add(message);
         _eventStats = _mqttTest.getEventStatistics();
-        
+
         // Get all image data from raw messages
         _imageData = _mqttTest.getAllImageData();
       });
@@ -65,10 +68,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Connection Status',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      children: [
+                        Text(
+                          'Connection Status',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Row(
                           children: [
@@ -78,7 +81,9 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                             ),
                             const SizedBox(width: 8),
                             Icon(
-                              _isMonitoring ? Icons.visibility : Icons.visibility_off,
+                              _isMonitoring
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: _isMonitoring ? Colors.blue : Colors.grey,
                             ),
                           ],
@@ -87,33 +92,38 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                     ),
                     const SizedBox(height: 8),
                     Text(_mqttTest.getConnectionStatus()),
-                    Text('Messages received: ${_mqttTest.getReceivedMessagesCount()}'),
+                    Text(
+                      'Messages received: ${_mqttTest.getReceivedMessagesCount()}',
+                    ),
                     if (_isMonitoring)
                       Text(
                         '🔍 Continuous monitoring active',
-                        style: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                   ],
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Event Statistics
             if (_eventStats.isNotEmpty)
-            Card(
+              Card(
                 color: Colors.orange[50],
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         'Event Statistics',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 4,
@@ -128,10 +138,9 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                   ),
                 ),
               ),
-            
-            
+
             const SizedBox(height: 16),
-            
+
             // Image Display Section
             if (_imageData.isNotEmpty)
               Card(
@@ -167,13 +176,18 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: GestureDetector(
-                                        onTap: () => _showImageDialog(imageInfo),
+                                        onTap: () =>
+                                            _showImageDialog(imageInfo),
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.1),
+                                                color: Colors.black.withOpacity(
+                                                  0.1,
+                                                ),
                                                 blurRadius: 4,
                                                 spreadRadius: 1,
                                               ),
@@ -192,7 +206,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                                   const SizedBox(height: 2),
                                   const Text(
                                     'Tap to view',
-                                    style: TextStyle(fontSize: 8, color: Colors.blue),
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      color: Colors.blue,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -200,13 +217,13 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                           },
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Control Buttons
             Wrap(
               spacing: 8,
@@ -266,11 +283,57 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                   icon: const Icon(Icons.image_not_supported),
                   label: const Text('Clear Images'),
                 ),
+                ElevatedButton.icon(
+                  onPressed: _runScannerTests,
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Test Scanner'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _testPopupFlow,
+                  icon: const Icon(Icons.layers),
+                  label: const Text('Test Popups'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _testTerminalClosed,
+                  icon: const Icon(Icons.lock),
+                  label: const Text('Test Terminal Closed'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _testSpecialBarcode,
+                  icon: const Icon(Icons.qr_code),
+                  label: const Text('Test Special Barcode'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _testStartupWith1010,
+                  icon: const Icon(Icons.rocket_launch),
+                  label: const Text('Test Startup 1010'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Event Test Buttons
             Card(
               color: Colors.green[50],
@@ -348,9 +411,9 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Messages Display
             Expanded(
               child: Card(
@@ -367,16 +430,29 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                           ),
                           Row(
                             children: [
-                          Text('Count: ${_messages.length}'),
+                              Text('Count: ${_messages.length}'),
                               const SizedBox(width: 16),
                               DropdownButton<String>(
                                 value: _selectedFilter,
-                                items: ['ALL', 'SECURITY', 'COMPLIANCE', 'NOTIFICATION', 'FINANCIAL', 'OPERATION', 'SYSTEM', 'COMMUNICATION', 'GENERAL']
-                                    .map((filter) => DropdownMenuItem(
-                                          value: filter,
-                                          child: Text(filter),
-                                        ))
-                                    .toList(),
+                                items:
+                                    [
+                                          'ALL',
+                                          'SECURITY',
+                                          'COMPLIANCE',
+                                          'NOTIFICATION',
+                                          'FINANCIAL',
+                                          'OPERATION',
+                                          'SYSTEM',
+                                          'COMMUNICATION',
+                                          'GENERAL',
+                                        ]
+                                        .map(
+                                          (filter) => DropdownMenuItem(
+                                            value: filter,
+                                            child: Text(filter),
+                                          ),
+                                        )
+                                        .toList(),
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedFilter = value!;
@@ -434,11 +510,11 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
     setState(() {
       _isConnected = success;
     });
-    
+
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connected to MQTT broker')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Connected to MQTT broker')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to connect to MQTT broker')),
@@ -459,36 +535,39 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
   Future<void> _sendTestMessage() async {
     final success = await _mqttTest.publishTestMessage('Hello from Flutter!');
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Test message sent')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Test message sent')));
     }
   }
 
   Future<void> _sendScanCommand() async {
     final success = await _mqttTest.sendScanCommand('1234567890123');
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Scan command sent')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Scan command sent')));
     }
   }
 
   Future<void> _sendPaymentCommand() async {
     final success = await _mqttTest.sendPaymentCommand(25.50, 'card');
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment command sent')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Payment command sent')));
     }
   }
 
   Future<void> _sendAlertCommand() async {
-    final success = await _mqttTest.sendAlertCommand('error', 'Test alert message');
+    final success = await _mqttTest.sendAlertCommand(
+      'error',
+      'Test alert message',
+    );
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alert command sent')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Alert command sent')));
     }
   }
 
@@ -521,9 +600,9 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
         _isMonitoring = false;
         _isConnected = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Monitoring stopped')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Monitoring stopped')));
     } else {
       // Start monitoring
       final success = await _mqttTest.startContinuousMonitoring();
@@ -531,11 +610,13 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
         _isMonitoring = success;
         _isConnected = success;
       });
-      
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Continuous monitoring started - listening for all events and alerts'),
+            content: Text(
+              'Continuous monitoring started - listening for all events and alerts',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -554,7 +635,9 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
     if (_selectedFilter == 'ALL') {
       return _messages;
     }
-    return _messages.where((message) => message.contains('[$_selectedFilter]')).toList();
+    return _messages
+        .where((message) => message.contains('[$_selectedFilter]'))
+        .toList();
   }
 
   Color _getCategoryColor(String category) {
@@ -622,7 +705,7 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
     try {
       final mimeType = imageInfo['mime'] as String?;
       final dataString = imageInfo['data'] as String?;
-      
+
       if (dataString == null || dataString.isEmpty) {
         return Container(
           color: Colors.grey[200],
@@ -631,10 +714,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
           ),
         );
       }
-      
+
       // Decode base64 data
       final bytes = base64Decode(dataString);
-      
+
       if (mimeType == 'image/gif') {
         // For GIF images, we'll display them as regular images
         // Note: Flutter doesn't natively support animated GIFs in Image.memory
@@ -686,7 +769,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error, size: 30, color: Colors.red),
-              Text('Decode Error', style: TextStyle(fontSize: 10, color: Colors.red)),
+              Text(
+                'Decode Error',
+                style: TextStyle(fontSize: 10, color: Colors.red),
+              ),
             ],
           ),
         ),
@@ -877,7 +963,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                             ),
                             Text(
                               'Type: ${imageInfo['mime']}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -889,7 +978,7 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                     ],
                   ),
                 ),
-                
+
                 // Image Display
                 Flexible(
                   child: Container(
@@ -900,7 +989,7 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                     ),
                   ),
                 ),
-                
+
                 // Footer with actions
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -950,7 +1039,7 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
     try {
       final mimeType = imageInfo['mime'] as String?;
       final dataString = imageInfo['data'] as String?;
-      
+
       if (dataString == null || dataString.isEmpty) {
         return Container(
           width: 400,
@@ -962,16 +1051,19 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
               children: [
                 Icon(Icons.broken_image, size: 80, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No Image Data', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Text(
+                  'No Image Data',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
               ],
             ),
           ),
         );
       }
-      
+
       // Decode base64 data
       final bytes = base64Decode(dataString);
-      
+
       if (mimeType == 'image/gif') {
         // For GIF images, display them as regular images
         return Image.memory(
@@ -990,7 +1082,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                   children: [
                     Icon(Icons.broken_image, size: 80, color: Colors.grey),
                     SizedBox(height: 16),
-                    Text('GIF Error', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    Text(
+                      'GIF Error',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
                   ],
                 ),
               ),
@@ -1015,7 +1110,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
                   children: [
                     Icon(Icons.broken_image, size: 80, color: Colors.grey),
                     SizedBox(height: 16),
-                    Text('Image Error', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    Text(
+                      'Image Error',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
                   ],
                 ),
               ),
@@ -1034,7 +1132,10 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
             children: [
               const Icon(Icons.error, size: 80, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Decode Error: $e', style: const TextStyle(fontSize: 16, color: Colors.red)),
+              Text(
+                'Decode Error: $e',
+                style: const TextStyle(fontSize: 16, color: Colors.red),
+              ),
             ],
           ),
         ),
@@ -1050,5 +1151,162 @@ class _MqttTestWidgetState extends State<MqttTestWidget> {
         backgroundColor: Colors.blue,
       ),
     );
+  }
+
+  Future<void> _runScannerTests() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Running comprehensive scanner tests...'),
+          backgroundColor: Colors.deepPurple,
+        ),
+      );
+
+      // Run the scanner tests
+      ScannerTest.runTests();
+
+      // Show completion message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Scanner tests completed! Check console for detailed results.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Scanner test failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testPopupFlow() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Testing popup flow with item scan background...'),
+          backgroundColor: Colors.teal,
+        ),
+      );
+
+      // Run the popup tests
+      await PopupTest.testPopupFlow();
+
+      // Show completion message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Popup tests completed! Check console for detailed results.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Popup test failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testTerminalClosed() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Testing terminal closed functionality...'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+
+      // Run the terminal closed tests
+      await PopupTest.testTerminalClosed();
+
+      // Show completion message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Terminal closed tests completed! Check console for results.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terminal closed test failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testSpecialBarcode() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Testing special barcode 1111111111116...'),
+          backgroundColor: Colors.indigo,
+        ),
+      );
+
+      // Run the special barcode tests
+      await PopupTest.testSpecialBarcode();
+      await PopupTest.testPosOverrideMode();
+      await PopupTest.testSubstatePopupFlow();
+
+      // Show completion message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Special barcode tests completed! Check console for results.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Special barcode test failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testStartupWith1010() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Testing startup with substate 1010...'),
+          backgroundColor: Colors.purple,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      await PopupTest.testStartupWith1010();
+
+      // Show completion message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Startup 1010 test completed! Check console for results.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Startup 1010 test failed: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }

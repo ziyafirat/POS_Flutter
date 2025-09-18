@@ -14,14 +14,10 @@ enum AppScreen {
   assistant,
   posCashier,
   parameters,
+  terminalClosed,
 }
 
-enum ConnectionStatus {
-  connected,
-  disconnected,
-  connecting,
-  error,
-}
+enum ConnectionStatus { connected, disconnected, connecting, error }
 
 @JsonSerializable()
 class AppState {

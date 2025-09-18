@@ -16,10 +16,10 @@ class WebApiService extends GetxController {
 
   // Flag to track if 1010 state has been received (to skip 1002 after 1010)
   bool _hasReceived1010 = false;
-  
+
   // Flag to track if 7006 printer text has been sent (to send only once)
   bool _hasSent7006PrinterText = false;
-  
+
   // Store the latest receipt data for printing
   String? _latestReceiptText;
 
@@ -61,7 +61,9 @@ class WebApiService extends GetxController {
       return;
     }
 
-    _logger.i('Starting API loop with ${_loopInterval.inMilliseconds}ms interval');
+    _logger.i(
+      'Starting API loop with ${_loopInterval.inMilliseconds}ms interval',
+    );
     _isRunning = true;
     _isConnected.value = true;
 
@@ -192,21 +194,25 @@ class WebApiService extends GetxController {
 
       // Update total amount from BalanceDue - Process for ANY substate
       print('🔥 LATEST CODE RUNNING - BalanceDue Check 🔥');
-      if (responseData['BalanceDue'] != null && 
+      if (responseData['BalanceDue'] != null &&
           responseData['BalanceDue'].toString().isNotEmpty &&
           responseData['BalanceDue'] != 'null') {
         final balanceDueString = responseData['BalanceDue'].toString().trim();
         final balanceDue = double.tryParse(balanceDueString) ?? 0.0;
-        
-        print('🔥 LATEST CODE: Processing BalanceDue: "$balanceDueString" -> $balanceDue');
-        
+
+        print(
+          '🔥 LATEST CODE: Processing BalanceDue: "$balanceDueString" -> $balanceDue',
+        );
+
         // Update total amount immediately
         final appController = Get.find<AppController>();
         appController.updateTotalAmount(balanceDue);
-        
+
         print('💰 LATEST CODE: Updated total amount: $balanceDue AED');
       } else {
-        print('🔥 LATEST CODE: BalanceDue not found or empty: ${responseData['BalanceDue']}');
+        print(
+          '🔥 LATEST CODE: BalanceDue not found or empty: ${responseData['BalanceDue']}',
+        );
       }
 
       // Process Display field for screen display
@@ -222,7 +228,7 @@ class WebApiService extends GetxController {
         final posSubState = responseData['PosSubState'].toString();
         final appController = Get.find<AppController>();
         appController.updatePosSubState(posSubState);
-        _handlePosSubStateNavigation(posSubState);
+        //_handlePosSubStateNavigation(posSubState);
       }
 
       // Process ItemLine for scanned items
@@ -243,100 +249,108 @@ class WebApiService extends GetxController {
     }
   }
 
-  /// Handle navigation based on PosSubState
-  void _handlePosSubStateNavigation(String posSubState) {
-    final appController = Get.find<AppController>();
+  // /// Handle navigation based on PosSubState
+  // void _handlePosSubStateNavigation(String posSubState) {
+  //   final appController = Get.find<AppController>();
 
-    // Skip automatic navigation if currently in POS Cashier, Assistant, Parameters, or Error screen
-    final currentScreen = appController.appState.value.currentScreen;
-    if (currentScreen == AppScreen.posCashier || 
-        currentScreen == AppScreen.assistant || 
-        currentScreen == AppScreen.parameters ||
-        currentScreen == AppScreen.error) {
-      _logger.i(
-        'Skipping automatic navigation - currently in ${currentScreen.toString().split('.').last} screen (PosSubState: $posSubState)',
-      );
-      return;
-    }
+  //   // Skip automatic navigation if currently in POS Cashier, Assistant, Parameters, or Error screen
+  //   final currentScreen = appController.appState.value.currentScreen;
+  //   if (currentScreen == AppScreen.posCashier ||
+  //       currentScreen == AppScreen.assistant ||
+  //       currentScreen == AppScreen.parameters ||
+  //       currentScreen == AppScreen.error) {
+  //     _logger.i(
+  //       'Skipping automatic navigation - currently in ${currentScreen.toString().split('.').last} screen (PosSubState: $posSubState)',
+  //     );
+  //     return;
+  //   }
 
-    switch (posSubState) {
-      case '1002':
-        // Skip 1002 if 1010 has already been received
-        if (_hasReceived1010) {
-          _logger.i(
-            'Skipping posSubState 1002 - 1010 has already been received',
-          );
-          return;
-        }
-        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
-        // Clear user-initiated navigation flag when system takes control
-        appController.clearUserInitiatedNavigation();
-        _logger.i('Navigating to item scan page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.itemScan);
-        break;
-      case '1010':
-        _hasReceived1010 = true; // Set flag when 1010 is received
-        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
-        // Clear user-initiated navigation flag when system takes control
-        appController.clearUserInitiatedNavigation();
-        _logger.i('Navigating to payment page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.payment);
-        break;
-      case '1001':
-        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
-        // Clear user-initiated navigation flag when system takes control
-        appController.clearUserInitiatedNavigation();
-        _logger.i('Navigating to start page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.itemScan);
-        break;
-      case '1008':
-        _hasReceived1010 = false; // Reset flag when 1008 is received
-        _hasSent7006PrinterText = false; // Reset 7006 printer flag when substate changes
-        
-        // Check if user manually navigated to item scan page
-        if (appController.userInitiatedNavigation && 
-            appController.appState.value.currentScreen == AppScreen.itemScan) {
-          _logger.i('PosSubState 1008 - User is in item scan page, staying on item scan (user-initiated navigation)');
-          // Clear the flag after some time or on next different substate
-          // Don't navigate away from item scan page
-        } else {
-          _logger.i('Navigating to start page (PosSubState: $posSubState)');
-          appController.navigateToScreen(AppScreen.start);
-        }
-        break;
-      case '10333':
-        _logger.i('Navigating to error page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.error);
-        break;
-      case '10356':
-        _logger.i('Navigating to error page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.error);
-        break;
-      case '10398':
-        _logger.i('Navigating to error page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.error);
-        break;
-      case '7006':
-        _logger.i('Navigating to printing page (PosSubState: $posSubState)');
-        appController.navigateToScreen(AppScreen.printing);
-        
-        // Send printer text only once until substate changes
-        if (!_hasSent7006PrinterText) {
-          _hasSent7006PrinterText = true;
-          _logger.i('Sending printer text for PosSubState 7006 (first time)');
-          print('🖨️ SUBSTATE 7006: Sending printer text (first time)');
-          
-          _sendPrinterTextFor7006();
-        } else {
-          _logger.i('Skipping printer text for PosSubState 7006 (already sent)');
-          print('🖨️ SUBSTATE 7006: Skipping printer text (already sent)');
-        }
-        break;
-      default:
-        _logger.d('Unknown PosSubState: $posSubState');
-        break;
-    }
-  }
+  //   switch (posSubState) {
+  //     case '1002':
+  //       // Skip 1002 if 1010 has already been received
+  //       if (_hasReceived1010) {
+  //         _logger.i(
+  //           'Skipping posSubState 1002 - 1010 has already been received',
+  //         );
+  //         return;
+  //       }
+  //       _hasSent7006PrinterText =
+  //           false; // Reset 7006 printer flag when substate changes
+  //       // Clear user-initiated navigation flag when system takes control
+  //       appController.clearUserInitiatedNavigation();
+  //       _logger.i('Navigating to item scan page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.itemScan);
+  //       break;
+  //     case '1010':
+  //       _hasReceived1010 = true; // Set flag when 1010 is received
+  //       _hasSent7006PrinterText =
+  //           false; // Reset 7006 printer flag when substate changes
+  //       // Clear user-initiated navigation flag when system takes control
+  //       appController.clearUserInitiatedNavigation();
+  //       _logger.i('Navigating to payment page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.payment);
+  //       break;
+  //     case '1001':
+  //       _hasSent7006PrinterText =
+  //           false; // Reset 7006 printer flag when substate changes
+  //       // Clear user-initiated navigation flag when system takes control
+  //       appController.clearUserInitiatedNavigation();
+  //       _logger.i('Navigating to start page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.itemScan);
+  //       break;
+  //     case '1008':
+  //       _hasReceived1010 = false; // Reset flag when 1008 is received
+  //       _hasSent7006PrinterText =
+  //           false; // Reset 7006 printer flag when substate changes
+
+  //       // Check if user manually navigated to item scan page
+  //       if (appController.userInitiatedNavigation &&
+  //           appController.appState.value.currentScreen == AppScreen.itemScan) {
+  //         _logger.i(
+  //           'PosSubState 1008 - User is in item scan page, staying on item scan (user-initiated navigation)',
+  //         );
+  //         // Clear the flag after some time or on next different substate
+  //         // Don't navigate away from item scan page
+  //       } else {
+  //         _logger.i('Navigating to start page (PosSubState: $posSubState)');
+  //         appController.navigateToScreen(AppScreen.start);
+  //       }
+  //       break;
+  //     case '10333':
+  //       _logger.i('Navigating to error page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.error);
+  //       break;
+  //     case '10356':
+  //       _logger.i('Navigating to error page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.error);
+  //       break;
+  //     case '10398':
+  //       _logger.i('Navigating to error page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.error);
+  //       break;
+  //     case '7006':
+  //       _logger.i('Navigating to printing page (PosSubState: $posSubState)');
+  //       appController.navigateToScreen(AppScreen.printing);
+
+  //       // Send printer text only once until substate changes
+  //       if (!_hasSent7006PrinterText) {
+  //         _hasSent7006PrinterText = true;
+  //         _logger.i('Sending printer text for PosSubState 7006 (first time)');
+  //         print('🖨️ SUBSTATE 7006: Sending printer text (first time)');
+
+  //         _sendPrinterTextFor7006();
+  //       } else {
+  //         _logger.i(
+  //           'Skipping printer text for PosSubState 7006 (already sent)',
+  //         );
+  //         print('🖨️ SUBSTATE 7006: Skipping printer text (already sent)');
+  //       }
+  //       break;
+  //     default:
+  //       _logger.d('Unknown PosSubState: $posSubState');
+  //       break;
+  //   }
+  // }
 
   /// Clean response body to handle control characters
   String _cleanResponseBody(String responseBody) {
@@ -433,49 +447,54 @@ class WebApiService extends GetxController {
     try {
       final decodedReceipt = _decodeBase64Lines(receipt);
       final receiptText = decodedReceipt.join('\n');
-      
+
       // Store the latest receipt text for use in substate 7006
       _latestReceiptText = receiptText;
 
       _logger.i('Decoded receipt for printing:\n$receiptText');
-      
+
       // Check if receipt contains "MPOS TXN END" text
       if (receiptText.contains('MPOS TXN END')) {
-        _logger.i('MPOS TXN END detected in receipt - navigating to printing page and printing receipt');
+        _logger.i(
+          'MPOS TXN END detected in receipt - navigating to printing page and printing receipt',
+        );
         final appController = Get.find<AppController>();
         appController.navigateToScreen(AppScreen.printing);
-        
+
         // Automatically print the receipt to USB Epson printer
         _printReceiptToUsbPrinter(receiptText);
       }
-      
+
       // Store receipt for printing (you can implement printing logic here)
       // For now, just log it
     } catch (e) {
       _logger.e('Error processing Receipt: $e');
     }
   }
-  
+
   /// Send printer text for PosSubState 7006
   Future<void> _sendPrinterTextFor7006() async {
     try {
       _logger.i('Sending printer text for PosSubState 7006...');
       print('🖨️ SUBSTATE 7006: Starting printer text send...');
-      
+
       // Get the USB printer service
       final printerService = Get.find<UsbPrinterService>();
-      
+
       // Use the latest receipt text from API response, or fallback text if none available
       String receiptText;
       if (_latestReceiptText != null && _latestReceiptText!.isNotEmpty) {
         receiptText = _latestReceiptText!;
         _logger.i('Using API response receipt data for PosSubState 7006');
         print('🖨️ SUBSTATE 7006: Using API response receipt data');
-        print('🖨️ SUBSTATE 7006: Receipt length: ${receiptText.length} characters');
+        print(
+          '🖨️ SUBSTATE 7006: Receipt length: ${receiptText.length} characters',
+        );
       } else {
         // Fallback receipt text if no API receipt data is available
         final now = DateTime.now();
-        receiptText = '''
+        receiptText =
+            '''
 === SUBSTATE 7006 RECEIPT ===
 Date: ${now.toString().substring(0, 19)}
 Store: Almaya Supermarket
@@ -487,44 +506,48 @@ Please wait...
 ========================
 Thank you for shopping!
 ''';
-        _logger.w('No API receipt data available, using fallback text for PosSubState 7006');
+        _logger.w(
+          'No API receipt data available, using fallback text for PosSubState 7006',
+        );
         print('⚠️ SUBSTATE 7006: No API receipt data, using fallback text');
       }
-      
+
       // Print using testPrintV2 method
       await printerService.testPrintV2(receiptText);
-      
+
       _logger.i('✅ PosSubState 7006 printer text sent successfully');
       print('✅ SUBSTATE 7006: Printer text sent successfully');
-      
     } catch (e) {
       _logger.e('❌ Failed to send PosSubState 7006 printer text: $e');
       print('❌ SUBSTATE 7006: Failed to send printer text: $e');
     }
   }
-  
+
   /// Print receipt to USB Epson printer using testPrintV2
   Future<void> _printReceiptToUsbPrinter(String receiptText) async {
     try {
       _logger.i('Sending receipt to USB Epson printer using testPrintV2...');
       print('🖨️ MPOS DEBUG: MPOS TXN END detected - calling testPrintV2');
-      print('🖨️ MPOS DEBUG: Receipt text length: ${receiptText.length} characters');
-      
+      print(
+        '🖨️ MPOS DEBUG: Receipt text length: ${receiptText.length} characters',
+      );
+
       // Get the USB printer service
       final printerService = Get.find<UsbPrinterService>();
-      
+
       // Print the receipt using testPrintV2 method
       await printerService.testPrintV2(receiptText);
-      
-      _logger.i('Receipt printed successfully to USB Epson printer via testPrintV2');
+
+      _logger.i(
+        'Receipt printed successfully to USB Epson printer via testPrintV2',
+      );
       print('🖨️ MPOS DEBUG: testPrintV2 completed successfully');
-      
     } catch (e) {
       _logger.e('Error printing receipt to USB printer via testPrintV2: $e');
       print('🖨️ MPOS DEBUG: testPrintV2 failed: $e');
     }
   }
-  
+
   /// Decode base64 lines (similar to your getReceipt method)
   List<String> _decodeBase64Lines(String base64Text) {
     List<String> lines = base64Text.split("\r\n");
@@ -583,7 +606,7 @@ Thank you for shopping!
       _logger.e('One-time API request error: $e');
     }
   }
-  
+
   // Update base URL
   void updateBaseUrl(String newBaseUrl) {
     _logger.i('Updating Web API base URL from $_baseUrl to $newBaseUrl');

@@ -13,6 +13,7 @@ import 'views/fraud_alert_page.dart';
 import 'views/assistant_page.dart';
 import 'views/pos_cashier_page.dart';
 import 'views/parameters_page.dart';
+import 'views/terminal_closed_page.dart';
 import 'widgets/mqtt_status_bar.dart';
 import 'widgets/fraud_alert_popup.dart';
 import 'models/app_state.dart';
@@ -50,10 +51,10 @@ class MainNavigationWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
     final ScannerService scannerService = Get.find<ScannerService>();
-    
+
     return Obx(() {
       Widget currentPage;
-      
+
       switch (controller.appState.value.currentScreen) {
         case AppScreen.start:
           currentPage = const StartPage();
@@ -87,6 +88,9 @@ class MainNavigationWrapper extends StatelessWidget {
           break;
         case AppScreen.parameters:
           currentPage = const ParametersPage();
+          break;
+        case AppScreen.terminalClosed:
+          currentPage = const TerminalClosedPage();
           break;
       }
 
