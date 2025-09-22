@@ -39,7 +39,7 @@ class MainNavigationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppController controller = Get.find<AppController>();
-    
+
     return Obx(() {
       switch (controller.appState.value.currentScreen) {
         case AppScreen.start:
