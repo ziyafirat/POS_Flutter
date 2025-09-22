@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -218,7 +219,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                           onPressed: () {
                             controller.dismissAlert();
                             controller
-                                .navigateToStart(); // Navigate back to start after dismissing
+                                .returnToPreviousPageAfterFraudAlert(); // Return to previous page after dismissing
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
@@ -229,7 +230,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                             ),
                           ),
                           child: const Text(
-                            'Close Alert',
+                            'Close Page',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -253,7 +254,7 @@ class _FraudAlertPageState extends State<FraudAlertPage>
                             ),
                           ),
                           child: const Text(
-                            'Report',
+                            'Send Alert Feedback',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -275,6 +276,58 @@ class _FraudAlertPageState extends State<FraudAlertPage>
   Widget _buildAlertImage() {
     final AppController controller = Get.find<AppController>();
     final alert = controller.currentAlert;
+
+    print('🔍 [FRAUD PAGE] === IMAGE DATA DEBUG START ===');
+    print('🔍 [FRAUD PAGE] Alert object: $alert');
+    print('🔍 [FRAUD PAGE] Alert is null: ${alert == null}');
+
+    if (alert != null) {
+      print('🔍 [FRAUD PAGE] Alert title: ${alert.title}');
+      print('🔍 [FRAUD PAGE] Alert message: ${alert.message}');
+      print('🔍 [FRAUD PAGE] Alert imageData: ${alert.imageData}');
+      print(
+        '🔍 [FRAUD PAGE] Alert imageData is null: ${alert.imageData == null}',
+      );
+
+      // Parse alert message as JSON to extract nested image data
+      String? imageData;
+      String? mimeType;
+
+      try {
+        final messageJson = jsonDecode(alert.message);
+        print('🔍 [FRAUD PAGE] Parsed message JSON: $messageJson');
+
+        // Extract image data from nested JSON structure
+        if (messageJson['image'] != null) {
+          final imageInfo = messageJson['image'];
+          imageData = imageInfo['data']?.toString();
+          mimeType = imageInfo['mime']?.toString();
+          print('📸 [FRAUD PAGE] Extracted image data from message JSON');
+          print('📸 [FRAUD PAGE] MIME type: $mimeType');
+          print('📸 [FRAUD PAGE] Image data length: ${imageData?.length}');
+          print('📸 [FRAUD PAGE] Complete image data: "$imageData"');
+        }
+      } catch (e) {
+        print('❌ [FRAUD PAGE] Failed to parse message as JSON: $e');
+      }
+
+      // Check if there's base64 image data (from direct imageData field or extracted from message)
+      final finalImageData = imageData ?? alert.imageData;
+      if (finalImageData != null && finalImageData.isNotEmpty) {
+        print(
+          '📸 [FRAUD PAGE] Found image data, length: ${finalImageData.length}',
+        );
+
+        // Create image info for dialog
+        final imageInfo = {
+          'data': finalImageData,
+          'mime': mimeType ?? alert.imageMimeType ?? 'image/png',
+        };
+
+        // Return large image that can be clicked to open dialog
+        return _buildLargeImage(imageInfo);
+      }
+    }
 
     // Check if there's a video URL (for GIF or video)
     if (alert?.videoUrl != null && alert!.videoUrl!.isNotEmpty) {
@@ -301,8 +354,228 @@ class _FraudAlertPageState extends State<FraudAlertPage>
         ),
         errorWidget: (context, url, error) => _buildDefaultAlertImage(),
       );
-    } else {
-      return _buildDefaultAlertImage();
+    }
+
+    print('❌ [FRAUD PAGE] No image data available - using default image');
+    return _buildDefaultAlertImage();
+  }
+
+  /// Build large image that can be clicked to open dialog
+  Widget _buildLargeImage(Map<String, dynamic> imageInfo) {
+    try {
+      final dataString = imageInfo['data'] as String;
+      final bytes = base64Decode(dataString);
+
+      return Center(
+        child: GestureDetector(
+          onTap: () => _showImageDialog(imageInfo),
+          child: Container(
+            width:
+                MediaQuery.of(context).size.width * 0.5, // 50% of screen width
+            height:
+                MediaQuery.of(context).size.height *
+                0.3, // 30% of screen height
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: Image.memory(
+                bytes,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[800],
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image, color: Colors.red, size: 80),
+                          SizedBox(height: 20),
+                          Text(
+                            'Error Loading Image',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      return Container(
+        color: Colors.grey[800],
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.broken_image, color: Colors.red, size: 80),
+              SizedBox(height: 20),
+              Text(
+                'Error Decoding Image',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Show image dialog similar to mqtt_test_widget
+  void _showImageDialog(Map<String, dynamic> imageInfo) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning, color: Colors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Fraud Alert Image',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
+                            ),
+                            Text(
+                              '${imageInfo['mime']}',
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                // Image Display
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildDialogImage(imageInfo),
+                  ),
+                ),
+                // Footer with actions
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build image for dialog
+  Widget _buildDialogImage(Map<String, dynamic> imageInfo) {
+    try {
+      final dataString = imageInfo['data'] as String;
+      final bytes = base64Decode(dataString);
+
+      return Image.memory(
+        bytes,
+        fit: BoxFit.contain,
+        width: MediaQuery.of(context).size.width * 0.7,
+        height: MediaQuery.of(context).size.height * 0.5,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                  SizedBox(height: 8),
+                  Text('Error loading image'),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      return Container(
+        color: Colors.grey[200],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+              const SizedBox(height: 8),
+              Text('Error: $e'),
+            ],
+          ),
+        ),
+      );
     }
   }
 
@@ -339,41 +612,96 @@ class _FraudAlertPageState extends State<FraudAlertPage>
     return '${timestamp.day}/${timestamp.month}/${timestamp.year} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
 
-  void _reportFraud() {
-    // Show confirmation dialog
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Report Fraud',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Are you sure you want to report this fraud incident?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+  void _reportFraud() async {
+    final AppController controller = Get.find<AppController>();
+    final alert = controller.currentAlert;
+
+    if (alert == null) {
+      _showErrorDialog('No alert data available');
+      return;
+    }
+
+    try {
+      // Send fraud feedback directly to MQTT
+      final success = await controller.mqttService.sendFraudFeedback(
+        alert.id,
+        'true_positive', // Default feedback type
+      );
+
+      if (success) {
+        // Successfully sent - show success dialog first
+        _showSuccessDialog(
+          'Fraud alert feedback sent successfully',
+          onClose: () {
+            // Close the alert page and return to previous page after dialog is closed
+            controller.dismissAlert();
+            controller.returnToPreviousPageAfterFraudAlert();
+          },
+        );
+      } else {
+        // Failed to send - show error popup
+        _showErrorDialog(
+          'Failed to send fraud alert feedback. Please try again.',
+        );
+      }
+    } catch (e) {
+      // Error occurred - show error popup
+      _showErrorDialog('Error sending fraud alert feedback: $e');
+    }
+  }
+
+  void _showSuccessDialog(String message, {VoidCallback? onClose}) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text('Success', style: TextStyle(color: Colors.green)),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              // Here you would typically send a report to your backend
-              Get.snackbar(
-                'Report Sent',
-                'Fraud incident has been reported to security',
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
-                duration: const Duration(seconds: 3),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Report', style: TextStyle(color: Colors.white)),
+          content: Text(message, style: const TextStyle(color: Colors.white70)),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onClose?.call();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('OK', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Error', style: TextStyle(color: Colors.red)),
+            ],
           ),
-        ],
-      ),
+          content: Text(message, style: const TextStyle(color: Colors.white70)),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('OK', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

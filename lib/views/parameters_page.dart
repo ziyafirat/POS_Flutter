@@ -20,6 +20,8 @@ class _ParametersPageState extends State<ParametersPage> {
   final _mqttUsernameController = TextEditingController();
   final _mqttPasswordController = TextEditingController();
   final _mqttTopicController = TextEditingController();
+  final _mqttTerminalIdController = TextEditingController();
+  final _mqttTopicPrefixController = TextEditingController();
 
   @override
   void initState() {
@@ -41,6 +43,8 @@ class _ParametersPageState extends State<ParametersPage> {
       _mqttUsernameController.text = mqttService.username;
       _mqttPasswordController.text = mqttService.password;
       _mqttTopicController.text = mqttService.topic;
+      _mqttTerminalIdController.text = mqttService.terminalId;
+      _mqttTopicPrefixController.text = mqttService.topicPrefix;
     } catch (e) {
       // Handle case where services are not yet initialized
       print('Error loading current settings: $e');
@@ -53,6 +57,8 @@ class _ParametersPageState extends State<ParametersPage> {
       _mqttUsernameController.text = 'admin';
       _mqttPasswordController.text = 'admin';
       _mqttTopicController.text = 'ssco/idol/alerts';
+      _mqttTerminalIdController.text = '500';
+      _mqttTopicPrefixController.text = 'ssco/idol/';
     }
   }
 
@@ -65,6 +71,8 @@ class _ParametersPageState extends State<ParametersPage> {
     _mqttUsernameController.dispose();
     _mqttPasswordController.dispose();
     _mqttTopicController.dispose();
+    _mqttTerminalIdController.dispose();
+    _mqttTopicPrefixController.dispose();
     super.dispose();
   }
 
@@ -74,6 +82,7 @@ class _ParametersPageState extends State<ParametersPage> {
         // Update Web API Service settings
         final webApiService = Get.find<WebApiService>();
         webApiService.updateBaseUrl(_webApiUrlController.text);
+        webApiService.updateTerminalId(_terminalNumberController.text);
 
         // Update App Controller terminal ID
         final appController = Get.find<AppController>();
@@ -81,6 +90,14 @@ class _ParametersPageState extends State<ParametersPage> {
 
         // Update MQTT Service settings
         final mqttService = Get.find<MqttService>();
+
+        // Update terminal ID in MQTT service
+        mqttService.updateTerminalId(_mqttTerminalIdController.text);
+
+        // Update topic prefix in MQTT service
+        mqttService.updateTopicPrefix(_mqttTopicPrefixController.text);
+
+        // Update other MQTT settings
         await mqttService.updateSettings(
           brokerHost: _mqttIpController.text,
           brokerPort: int.tryParse(_mqttPortController.text) ?? 1883,
@@ -94,26 +111,62 @@ class _ParametersPageState extends State<ParametersPage> {
         await mqttService.connect();
 
         // Show success message
-        Get.snackbar(
-          'Success',
-          'Settings saved successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        _showSuccessDialog('Settings saved successfully');
 
         // Navigate back
         appController.navigateToStart();
       } catch (e) {
-        Get.snackbar(
-          'Error',
-          'Failed to save settings: $e',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        _showErrorDialog('Failed to save settings: $e');
       }
     }
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text('Success'),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Error'),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -301,7 +354,7 @@ class _ParametersPageState extends State<ParametersPage> {
                         controller: _mqttTopicController,
                         decoration: const InputDecoration(
                           labelText: 'MQTT Topic',
-                          hintText: 'pos/terminal/500',
+                          hintText: 'ssco/idol/alerts',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.topic),
                         ),
@@ -311,6 +364,53 @@ class _ParametersPageState extends State<ParametersPage> {
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mqttTerminalIdController,
+                              decoration: const InputDecoration(
+                                labelText: 'MQTT Terminal ID',
+                                hintText: '500',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.confirmation_number),
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter terminal ID';
+                                }
+                                if (int.tryParse(value) == null) {
+                                  return 'Please enter a valid number';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mqttTopicPrefixController,
+                              decoration: const InputDecoration(
+                                labelText: 'MQTT Topic Prefix',
+                                hintText: 'ssco/idol/',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.label),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter topic prefix';
+                                }
+                                if (!value.endsWith('/')) {
+                                  return 'Topic prefix should end with /';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

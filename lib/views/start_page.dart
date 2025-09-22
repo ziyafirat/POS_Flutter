@@ -150,7 +150,7 @@ class StartPage extends StatelessWidget {
                     height: 60,
                     child: ElevatedButton(
                       onPressed: () {
-                        controller.navigateToItemScan();
+                        controller.navigateToItemScanWithTimer();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE31E24), // Almaya red

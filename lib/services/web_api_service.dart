@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
@@ -14,7 +14,7 @@ class WebApiService extends GetxController {
   Timer? _apiTimer;
   bool _isRunning = false;
   bool _requestInProgress = false;
-  final Random _rand = Random();
+  final math.Random _rand = math.Random();
 
   // Flag to track if MPOS TXN END is present in current receipt to prevent duplicate printing
   bool _mposTxnEndPresent = false;
@@ -149,7 +149,7 @@ class WebApiService extends GetxController {
         'ListenerFlag': 'false',
         'ProcessFlag': 'display2',
         'qty': 'This is REST Service.',
-        'TerminalID': '500',
+        'TerminalID': Get.find<AppController>().terminalId ?? '500',
       },
     ];
   }
@@ -544,24 +544,110 @@ class WebApiService extends GetxController {
 
   /// Decode base64 lines (similar to your getReceipt method)
   List<String> _decodeBase64Lines(String base64Text) {
+    // Log the raw input for debugging
+    _logger.d('_decodeBase64Lines input length: ${base64Text.length}');
+    _logger.d(
+      '_decodeBase64Lines raw input: ${base64Text.substring(0, math.min(200, base64Text.length))}${base64Text.length > 200 ? "..." : ""}',
+    );
+
     List<String> lines = base64Text.split('\r\n');
     List<String> decodedLines = [];
+    int lineNumber = 0;
+
+    _logger.d('Split into ${lines.length} lines');
 
     for (var line in lines) {
+      lineNumber++;
+
       if (line.trim().isEmpty) {
         decodedLines.add(''); // keep empty lines
         continue;
       }
+
+      final trimmedLine = line.trim();
+
       try {
-        final bytes = base64Decode(line.trim());
+        // Validate base64 format before attempting decode
+        if (!_isValidBase64Format(trimmedLine)) {
+          _logger.w(
+            'Line $lineNumber: Invalid base64 format - contains invalid characters: "$trimmedLine"',
+          );
+          continue;
+        }
+
+        final bytes = base64Decode(trimmedLine);
         final decodedLine = utf8.decode(bytes);
         decodedLines.add(decodedLine);
+
+        _logger.d(
+          'Line $lineNumber: Successfully decoded "${trimmedLine.substring(0, math.min(50, trimmedLine.length))}${trimmedLine.length > 50 ? "..." : ""}" -> "$decodedLine"',
+        );
       } catch (e) {
-        _logger.w('Invalid base64 line skipped: $line');
+        _logger.w('Line $lineNumber: Invalid base64 line skipped - Error: $e');
+        _logger.w('Line $lineNumber: Problematic content: "$trimmedLine"');
+        _logger.w('Line $lineNumber: Content length: ${trimmedLine.length}');
+        _logger.w('Line $lineNumber: Content bytes: ${trimmedLine.codeUnits}');
+
+        // Try to salvage partial data if possible
+        final salvaged = _attemptBase64Salvage(trimmedLine);
+        if (salvaged != null) {
+          decodedLines.add(salvaged);
+          _logger.i('Line $lineNumber: Salvaged partial data: "$salvaged"');
+        }
       }
     }
 
+    _logger.i(
+      '_decodeBase64Lines completed: ${decodedLines.length} valid lines decoded from ${lines.length} input lines',
+    );
     return decodedLines;
+  }
+
+  /// Validate if a string has valid base64 format
+  bool _isValidBase64Format(String input) {
+    // Base64 should only contain A-Z, a-z, 0-9, +, /, and = for padding
+    final base64Regex = RegExp(r'^[A-Za-z0-9+/]*={0,2}$');
+
+    if (!base64Regex.hasMatch(input)) {
+      return false;
+    }
+
+    // Check length - base64 encoded strings should be multiples of 4
+    if (input.length % 4 != 0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Attempt to salvage data from malformed base64
+  String? _attemptBase64Salvage(String malformedBase64) {
+    try {
+      // Try removing non-base64 characters
+      final cleaned = malformedBase64.replaceAll(
+        RegExp(r'[^A-Za-z0-9+/=]'),
+        '',
+      );
+
+      // Try padding to make it a multiple of 4
+      String padded = cleaned;
+      while (padded.length % 4 != 0) {
+        padded += '=';
+      }
+
+      if (_isValidBase64Format(padded)) {
+        final bytes = base64Decode(padded);
+        final decoded = utf8.decode(bytes);
+        _logger.i(
+          'Successfully salvaged base64 data: "$malformedBase64" -> "$decoded"',
+        );
+        return decoded;
+      }
+    } catch (e) {
+      _logger.d('Base64 salvage attempt failed: $e');
+    }
+
+    return null;
   }
 
   /// Send one-time API request with custom DisplayLine
@@ -576,7 +662,7 @@ class WebApiService extends GetxController {
           'ListenerFlag': 'false',
           'ProcessFlag': 'display',
           'qty': 'This is REST Service.',
-          'TerminalID': '500',
+          'TerminalID': Get.find<AppController>().terminalId ?? '500',
         },
       ];
 
@@ -606,5 +692,11 @@ class WebApiService extends GetxController {
     _logger.i('Updating Web API base URL from $_baseUrl to $newBaseUrl');
     _baseUrl = newBaseUrl;
     _logger.i('Web API base URL updated successfully');
+  }
+
+  // Update terminal ID
+  void updateTerminalId(String terminalId) {
+    _logger.i('Updated terminal ID: $terminalId');
+    // Terminal ID will be used dynamically in API calls
   }
 }

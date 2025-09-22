@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
@@ -12,6 +13,7 @@ import '../models/parsed_item.dart';
 import '../widgets/payment_popup.dart';
 import '../widgets/processing_popup.dart';
 import '../widgets/printing_popup.dart';
+import '../widgets/thank_you_popup.dart';
 import 'language_controller.dart';
 
 class AppController extends GetxController {
@@ -46,11 +48,17 @@ class AppController extends GetxController {
   // Track user scanning session to ignore 1008 during active scanning
   final RxBool _userScanningSession = false.obs;
 
+  // Track previous page before fraud alert to return to it when alert is dismissed
+  AppScreen? _previousPageBeforeFraudAlert;
+
   // Track payment flow state - enabled on 1010, disabled on 1008
   bool _paymentFlowActive = false;
 
   // Track start page stay state - enabled after 1008, disabled on 1010
   bool _stayOnStartPageUntilManualStart = false;
+
+  // Timer for 20-second item scan session when start button is pressed from start page
+  Timer? _itemScanTimer;
 
   // Flags to prevent duplicate MQTT checkout events
   bool _canSendCheckoutStart = true; // Initially can send start event
@@ -102,6 +110,7 @@ class AppController extends GetxController {
   void onClose() {
     _alertSubscription?.cancel();
     _scannerSubscription?.cancel();
+    _itemScanTimer?.cancel(); // Cancel the 20-second timer
     _mqttService.disconnect();
     _scannerService.stopListening();
 
@@ -194,8 +203,18 @@ class AppController extends GetxController {
 
       // Navigate to appropriate alert screen based on alert type
       if (alert.type == AlertType.fraud) {
-        // For fraud alerts, navigate to fraud alert page
+        // For fraud alerts, close all other popup pages first
+        _closeAllPopups();
+
+        // Remember the current page before navigating to fraud alert
         if (_appState.value.currentScreen != AppScreen.fraudAlert) {
+          _previousPageBeforeFraudAlert = _appState.value.currentScreen;
+          _logger.i(
+            '🚨 FRAUD ALERT: Remembering previous page: $_previousPageBeforeFraudAlert',
+          );
+          print(
+            '🚨 FRAUD ALERT: Remembering previous page: $_previousPageBeforeFraudAlert',
+          );
           _navigateToScreen(AppScreen.fraudAlert);
         }
       } else {
@@ -212,6 +231,25 @@ class AppController extends GetxController {
       _logger.i('Received scanned barcode: $scannedCode');
       _handleScannedBarcode(scannedCode);
     });
+  }
+
+  /// Close all popup pages (dialogs) when fraud alert is received
+  void _closeAllPopups() {
+    _logger.i('🚨 FRAUD ALERT: Closing all popup pages');
+    print('🚨 FRAUD ALERT: Closing all popup pages');
+
+    // Close any open dialogs/popups
+    if (Get.isDialogOpen == true) {
+      _logger.i('🚨 FRAUD ALERT: Closing existing dialog');
+      print('🚨 FRAUD ALERT: Closing existing dialog');
+      Get.back();
+    }
+
+    // Reset popup substate tracking
+    _currentPopupSubstate = '';
+
+    _logger.i('🚨 FRAUD ALERT: All popups closed successfully');
+    print('🚨 FRAUD ALERT: All popups closed successfully');
   }
 
   void _handleScannedBarcode(String barcode) {
@@ -426,6 +464,63 @@ class AppController extends GetxController {
     }
 
     _navigateToScreen(AppScreen.itemScan);
+  }
+
+  /// Navigate to item scan page with 20-second timer (for start button from start page)
+  void navigateToItemScanWithTimer() {
+    _logger.i('🚀 Starting 20-second item scan session from start page');
+    print('🚀 Starting 20-second item scan session from start page');
+
+    // Cancel any existing timer
+    if (_itemScanTimer != null) {
+      _logger.i('🔄 Cancelling existing timer before starting new one');
+      print('🔄 Cancelling existing timer before starting new one');
+      _itemScanTimer!.cancel();
+    }
+
+    // Navigate to item scan page
+    navigateToItemScan();
+
+    // Start 20-second timer
+    _itemScanTimer = Timer(const Duration(seconds: 20), () {
+      _logger.i('⏰ 20-second timer expired - checking if still substate 1008');
+      print('⏰ 20-second timer expired - checking if still substate 1008');
+      print('⏰ Current substate: ${_posSubState.value}');
+      print('⏰ Current screen: ${_appState.value.currentScreen}');
+
+      // Check if we're still on substate 1008
+      if (_posSubState.value == '1008') {
+        _logger.i('🔄 Still substate 1008 - returning to start page');
+        print('🔄 Still substate 1008 - returning to start page');
+
+        // Clear the timer
+        _itemScanTimer = null;
+
+        // Navigate back to start page
+        navigateToStart();
+
+        // Re-enable start page stay flag
+        _stayOnStartPageUntilManualStart = true;
+        _logger.i('🔒 Start page stay flag re-enabled after timer expiry');
+        print('🔒 Start page stay flag re-enabled after timer expiry');
+      } else {
+        _logger.i(
+          '✅ Substate changed to ${_posSubState.value} - staying on item scan',
+        );
+        print(
+          '✅ Substate changed to ${_posSubState.value} - staying on item scan',
+        );
+        _itemScanTimer = null;
+      }
+    });
+
+    _logger.i(
+      '⏱️ 20-second timer started - will return to start if substate remains 1008',
+    );
+    print(
+      '⏱️ 20-second timer started - will return to start if substate remains 1008',
+    );
+    print('⏱️ Timer active: ${_itemScanTimer?.isActive}');
   }
 
   void navigateToPayment() {
@@ -691,6 +786,26 @@ class AppController extends GetxController {
     _logger.i('Alert dismissed');
   }
 
+  // Return to the page that was active before fraud alert
+  void returnToPreviousPageAfterFraudAlert() {
+    if (_previousPageBeforeFraudAlert != null) {
+      _logger.i(
+        '🚨 FRAUD ALERT: Returning to previous page: $_previousPageBeforeFraudAlert',
+      );
+      print(
+        '🚨 FRAUD ALERT: Returning to previous page: $_previousPageBeforeFraudAlert',
+      );
+      _navigateToScreen(_previousPageBeforeFraudAlert!);
+      _previousPageBeforeFraudAlert = null; // Clear the remembered page
+    } else {
+      _logger.i(
+        '🚨 FRAUD ALERT: No previous page remembered, navigating to start',
+      );
+      print('🚨 FRAUD ALERT: No previous page remembered, navigating to start');
+      _navigateToScreen(AppScreen.start);
+    }
+  }
+
   // Payment processing
   Future<void> processPayment(String paymentMethod) async {
     try {
@@ -725,19 +840,47 @@ class AppController extends GetxController {
 
   void simulateFraudAlert() {
     _logger.i('Simulating fraud alert...');
+
+    // Create a simple test image (1x1 red pixel PNG) in base64
+    const testImageBase64 =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+    // Create message in the same format as real fraud alerts (with nested image object)
+    final messageJson = {
+      "id": "0f363004-9acc-4053-b2fe-ff594d9a2321",
+      "transaction_id": "de3caf2d-060d-42c0-ba99-c18e066afdac",
+      "store_id": "123",
+      "checkout_id": "0500",
+      "timestamp": DateTime.now().toIso8601String(),
+      "fraud_type": "FIRST_ITEM_IN_FINAL_AREA",
+      "data_path": "walkout",
+      "confidence": 0.82,
+      "pos_interaction": "SOFT_NUDGE",
+      "image": {"mime": "image/png", "data": testImageBase64},
+    };
+
     final fraudAlert = AlertMessage(
       id: 'FRAUD_${DateTime.now().millisecondsSinceEpoch}',
       title: 'Fraud Alert',
-      message:
-          'Suspicious activity detected at checkout station. Please investigate immediately.',
+      message: jsonEncode(messageJson), // Use JSON string like real alerts
       type: AlertType.fraud,
       videoUrl: 'https://example.com/fraud_alert.gif',
+      imageData: testImageBase64, // Also set direct imageData for fallback
+      imageMimeType: 'image/png',
       timestamp: DateTime.now(),
       isActive: true,
     );
 
+    _logger.i('📸 Fraud alert created with nested image format');
+    print('📸 Fraud alert created with nested image format');
+    print('📸 Fraud alert message: ${jsonEncode(messageJson)}');
+    print('📸 Fraud alert imageData: "$testImageBase64"');
+
     _currentAlert.value = fraudAlert;
     _updateAppState(isAlertActive: true);
+
+    // Close all popups before showing fraud alert page
+    _closeAllPopups();
     _navigateToScreen(AppScreen.fraudAlert);
   }
 
@@ -765,6 +908,7 @@ class AppController extends GetxController {
   // PosSubState for API response
   final RxString _posSubState = ''.obs;
   String get posSubState => _posSubState.value;
+  RxString get posSubStateStream => _posSubState;
 
   void updatePosSubState(String state) {
     final previousState = _posSubState.value;
@@ -840,32 +984,31 @@ class AppController extends GetxController {
       }
     }
 
-    // Special handling for substate 1008 - behavior depends on current flags
+    // Special handling for substate 1008 - go to start page unless timer is active
     if (state == '1008') {
-      if (_userScanningSession.value) {
-        _logger.i('🔒 Substate 1008: Ignored - user scanning session active');
-        print('🔒 Substate 1008: Ignored - user scanning session active');
-        // Close any popups but stay on item scan page
-        closeAllPopups();
-        _currentPopupSubstate = '';
-        return; // Exit early - don't navigate to start
-      } else if (_paymentFlowActive) {
+      // Check if we have an active timer (user pressed start button)
+      if (_itemScanTimer != null && _itemScanTimer!.isActive) {
         _logger.i(
-          '🔄 Substate 1008: Payment flow complete - stay on item scan page',
+          '⏱️ Substate 1008: Timer is active - ignoring navigation to start',
         );
         print(
-          '🔄 Substate 1008: Payment flow complete - stay on item scan page',
+          '⏱️ Substate 1008: Timer is active - ignoring navigation to start',
         );
-        // Payment flow flag is already disabled above
-        // Close any popups but stay on item scan page
+        // Just close popups but don't navigate - let the timer handle the navigation
         closeAllPopups();
         _currentPopupSubstate = '';
-        return; // Exit early - don't navigate to start
+        return; // Exit early - let timer handle the navigation
       } else {
         _logger.i(
-          '🏁 Substate 1008: Closing all popups and returning to start',
+          '🏁 Substate 1008: No active timer - returning to start page',
         );
-        print('🏁 Substate 1008: Closing all popups and returning to start');
+        print('🏁 Substate 1008: No active timer - returning to start page');
+
+        // Cancel any existing item scan timer (should be null already)
+        _itemScanTimer?.cancel();
+        _itemScanTimer = null;
+
+        // Close any popups and navigate to start
         closeAllPopups();
         _currentPopupSubstate = '';
         navigateToStart();
@@ -1117,17 +1260,17 @@ class AppController extends GetxController {
         break;
 
       case '7006':
-        _logger.i('🖨️ Substate 7006: Printing - showing printing popup');
-        print('🖨️ Substate 7006: Printing - showing printing popup');
-        _showPopupOverItemScan('PrintingPopup', state, () {
+        _logger.i(
+          '🎉 Substate 7006: Transaction Complete - showing thank you popup',
+        );
+        print(
+          '🎉 Substate 7006: Transaction Complete - showing thank you popup',
+        );
+        _showPopupOverItemScan('ThankYouPopup', state, () {
           Get.dialog(
-            const ProcessingPopup(
-              title: 'Printing Receipt',
-              message: 'Please wait while we print your receipt...',
-              icon: Icons.print,
-            ),
+            const ThankYouPopup(), // No auto-close - stays until substate 1008 or 7006 changes
             barrierDismissible: false,
-            name: 'printing_popup',
+            name: 'thank_you_popup',
           );
         });
         break;
@@ -1145,8 +1288,8 @@ class AppController extends GetxController {
           _showPopupOverItemScan('ProcessingPopup', state, () {
             Get.dialog(
               const ProcessingPopup(
-                title: 'Processing Payment',
-                message: 'Please wait while we process your payment...',
+                title: 'Processing Transaction',
+                message: 'Please wait while we process your transaction...',
                 icon: Icons.hourglass_empty,
               ),
               barrierDismissible: false,
@@ -1384,5 +1527,60 @@ class AppController extends GetxController {
         _handleItemScanPopupNavigation('1010');
       });
     }
+  }
+
+  /// Test method to show the Thank You popup (substate 7006)
+  void testThankYouPopup() {
+    _logger.i('🧪 TEST: Testing Thank You popup (substate 7006)');
+    print('🧪 TEST: Testing Thank You popup (substate 7006)');
+
+    // Ensure we're on item scan page first
+    if (_appState.value.currentScreen != AppScreen.itemScan) {
+      navigateToItemScan();
+      Timer(const Duration(milliseconds: 500), () {
+        _handleItemScanPopupNavigation('7006');
+      });
+    } else {
+      _handleItemScanPopupNavigation('7006');
+    }
+  }
+
+  /// Test method for substate 1008 behavior with 20-second timer
+  void testSubstate1008Behavior() {
+    _logger.i('🧪 TEST: Testing substate 1008 behavior with 20-second timer');
+    print('🧪 TEST: Testing substate 1008 behavior with 20-second timer');
+
+    // Simulate being on start page
+    navigateToStart();
+
+    // Wait a moment then simulate start button press
+    Timer(const Duration(milliseconds: 500), () {
+      print('🧪 TEST: Simulating start button press');
+      navigateToItemScanWithTimer();
+
+      // Wait 25 seconds to see if it returns to start page
+      Timer(const Duration(seconds: 25), () {
+        print('🧪 TEST: 25 seconds elapsed - checking final state');
+        print('🧪 TEST: Current screen: ${_appState.value.currentScreen}');
+        print('🧪 TEST: Current substate: ${_posSubState.value}');
+      });
+    });
+  }
+
+  /// Debug method to check timer status
+  void debugTimerStatus() {
+    print('🔍 TIMER DEBUG:');
+    print('🔍 Timer exists: ${_itemScanTimer != null}');
+    print('🔍 Timer active: ${_itemScanTimer?.isActive}');
+    print('🔍 Current substate: ${_posSubState.value}');
+    print('🔍 Current screen: ${_appState.value.currentScreen}');
+    print('🔍 Stay on start flag: $_stayOnStartPageUntilManualStart');
+  }
+
+  /// Test fraud alert popup with image
+  void testFraudAlertWithImage() {
+    _logger.i('🧪 TEST: Testing fraud alert popup with image');
+    print('🧪 TEST: Testing fraud alert popup with image');
+    simulateFraudAlert();
   }
 }

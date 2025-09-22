@@ -27,8 +27,14 @@ class MqttService {
 
   // MQTT Configuration - Topic Prefix
   static const String _topicPrefix = 'ssco/idol/';
-  static const String _terminalId = '500'; // Terminal ID for this client
+  static const String _defaultTerminalId = '500'; // Default Terminal ID
   static const String _alertsTopic = '${_topicPrefix}alerts';
+
+  // Dynamic terminal ID - will be updated from app controller
+  String _terminalId = _defaultTerminalId;
+
+  // Dynamic fraud inbound topic based on current terminal ID
+  String get _fraudInboundTopic => '${_topicPrefix}$_terminalId/fraud/inbound';
 
   // Transaction tracking for checkout events
   String? _currentTransactionId;
@@ -45,6 +51,40 @@ class MqttService {
 
     final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}';
+  }
+
+  /// Verify base64 data integrity
+  String _verifyBase64Integrity(String base64Data) {
+    try {
+      // Check if length is multiple of 4 (base64 requirement)
+      final lengthCheck = base64Data.length % 4 == 0;
+
+      // Check if contains only valid base64 characters
+      final validCharsRegex = RegExp(r'^[A-Za-z0-9+/]*={0,2}$');
+      final validChars = validCharsRegex.hasMatch(base64Data);
+
+      // Try to decode a small portion to verify it's valid base64
+      final canDecode = base64Data.length >= 4;
+      bool decodeTest = false;
+      if (canDecode) {
+        try {
+          // Test decode first 100 chars or full string if shorter
+          final testLength = base64Data.length > 100 ? 100 : base64Data.length;
+          final testPortion = base64Data.substring(0, testLength);
+          // Ensure test portion has valid padding
+          final paddedTest =
+              testPortion + '=' * ((4 - testPortion.length % 4) % 4);
+          base64.decode(paddedTest);
+          decodeTest = true;
+        } catch (e) {
+          decodeTest = false;
+        }
+      }
+
+      return 'Length OK: $lengthCheck, Valid chars: $validChars, Decode test: $decodeTest';
+    } catch (e) {
+      return 'Integrity check failed: $e';
+    }
   }
 
   // Configuration properties
@@ -157,14 +197,19 @@ class MqttService {
       _logger.i('📡 [MQTT] Subscribing to topics...');
       _logger.i('📡 [MQTT] Topic Prefix: $_topicPrefix');
       _logger.i('📡 [MQTT] Topic: $_alertsTopic');
+      _logger.i('📡 [MQTT] Fraud Topic: $_fraudInboundTopic');
       _logger.i('📡 [MQTT] QoS: ${MqttQos.atLeastOnce}');
 
+      // Subscribe to both general alerts and fraud inbound topics
       _client!.subscribe(_alertsTopic, MqttQos.atLeastOnce);
-      _logger.i('📡 [MQTT] Subscription request sent');
+      _client!.subscribe(_fraudInboundTopic, MqttQos.atLeastOnce);
+      _logger.i('📡 [MQTT] Subscription requests sent');
 
       _client!.updates!.listen(_onMessage);
       _logger.i('📡 [MQTT] Message listener attached');
-      _logger.i('📡 [MQTT] Ready to receive messages on topic: $_alertsTopic');
+      _logger.i(
+        '📡 [MQTT] Ready to receive messages on topics: $_alertsTopic and $_fraudInboundTopic',
+      );
     } else {
       _logger.e('❌ [MQTT] Cannot subscribe - client is null or not connected');
       _logger.e('❌ [MQTT] Client null: ${_client == null}');
@@ -190,17 +235,18 @@ class MqttService {
       _logger.i('📨 [MQTT] INBOUND: - Topic: ${recMess.topic}');
       print('📨 [MQTT] INBOUND: - Topic: ${recMess.topic}');
 
-      // Check if this is an unexpected topic
-      if (recMess.topic != _alertsTopic) {
+      // Check if this is an expected topic (alerts or fraud inbound)
+      if (recMess.topic != _alertsTopic &&
+          recMess.topic != _fraudInboundTopic) {
         _logger.w(
-          '⚠️ [MQTT] INBOUND: UNEXPECTED TOPIC - We only subscribe to: $_alertsTopic',
+          '⚠️ [MQTT] INBOUND: UNEXPECTED TOPIC - We subscribe to: $_alertsTopic and $_fraudInboundTopic',
         );
         _logger.w('⚠️ [MQTT] INBOUND: But received from: ${recMess.topic}');
         _logger.w(
           '⚠️ [MQTT] INBOUND: This suggests broker misconfiguration or message republishing',
         );
         print(
-          '⚠️ [MQTT] INBOUND: UNEXPECTED TOPIC - We only subscribe to: $_alertsTopic',
+          '⚠️ [MQTT] INBOUND: UNEXPECTED TOPIC - We subscribe to: $_alertsTopic and $_fraudInboundTopic',
         );
         print('⚠️ [MQTT] INBOUND: But received from: ${recMess.topic}');
         print(
@@ -232,19 +278,26 @@ class MqttService {
         _logger.i('🚨 [MQTT] INBOUND: JSON data: $jsonData');
         print('🚨 [MQTT] INBOUND: JSON data: $jsonData');
 
-        // Check if event_type exists and equals 'fraud_alert'
+        // Check if this is a fraud alert (either by event_type or by topic)
         final eventType = jsonData['event_type']?.toString();
-        _logger.i('🚨 [MQTT] INBOUND: Event type: $eventType');
-        print('🚨 [MQTT] INBOUND: Event type: $eventType');
+        final isFraudTopic = recMess.topic.contains('/fraud/inbound');
+        final isFraudAlert = eventType == 'fraud_alert' || isFraudTopic;
 
-        if (eventType != 'fraud_alert') {
+        _logger.i('🚨 [MQTT] INBOUND: Event type: $eventType');
+        _logger.i('🚨 [MQTT] INBOUND: Is fraud topic: $isFraudTopic');
+        _logger.i('🚨 [MQTT] INBOUND: Is fraud alert: $isFraudAlert');
+        print('🚨 [MQTT] INBOUND: Event type: $eventType');
+        print('🚨 [MQTT] INBOUND: Is fraud topic: $isFraudTopic');
+        print('🚨 [MQTT] INBOUND: Is fraud alert: $isFraudAlert');
+
+        if (!isFraudAlert) {
           _logger.i(
-            '🚫 [MQTT] Ignoring alert - event_type is not fraud_alert (got: $eventType)',
+            '🚫 [MQTT] Ignoring alert - not a fraud alert (event_type: $eventType, topic: ${recMess.topic})',
           );
           return; // Exit early - don't show this alert
         }
 
-        _logger.i('✅ [MQTT] Event type is fraud_alert - processing alert...');
+        _logger.i('✅ [MQTT] Processing fraud alert...');
 
         // Extract alert details from JSON
         final alertTitle = jsonData['title']?.toString() ?? 'Fraud Alert';
@@ -261,6 +314,40 @@ class MqttService {
           _logger.i(
             '🖼️ [MQTT] Image data found: $imageMimeType (${imageData?.length ?? 0} chars)',
           );
+          print(
+            '🖼️ [MQTT] Image data found: $imageMimeType (${imageData?.length ?? 0} chars)',
+          );
+
+          // Verify image data integrity without logging full data (to avoid truncation)
+          if (imageData != null) {
+            final firstChars = imageData.substring(
+              0,
+              imageData.length > 50 ? 50 : imageData.length,
+            );
+            final lastChars = imageData.length > 50
+                ? imageData.substring(imageData.length - 50)
+                : '';
+
+            _logger.i('🖼️ [MQTT] Image data verification:');
+            _logger.i('🖼️ [MQTT] - Length: ${imageData.length} chars');
+            _logger.i('🖼️ [MQTT] - First 50: "$firstChars"');
+            if (lastChars.isNotEmpty) {
+              _logger.i('🖼️ [MQTT] - Last 50: "$lastChars"');
+            }
+            _logger.i(
+              '🖼️ [MQTT] - Integrity: ${_verifyBase64Integrity(imageData)}',
+            );
+
+            print('🖼️ [MQTT] Image data verification:');
+            print('🖼️ [MQTT] - Length: ${imageData.length} chars');
+            print('🖼️ [MQTT] - First 50: "$firstChars"');
+            if (lastChars.isNotEmpty) {
+              print('🖼️ [MQTT] - Last 50: "$lastChars"');
+            }
+            print(
+              '🖼️ [MQTT] - Integrity: ${_verifyBase64Integrity(imageData)}',
+            );
+          }
         }
 
         final alert = AlertMessage(
@@ -281,8 +368,35 @@ class MqttService {
         _logger.i('🚨 [MQTT] - Message: ${alert.message}');
         _logger.i('🚨 [MQTT] - Type: ${alert.type}');
         _logger.i('🚨 [MQTT] - Video URL: ${alert.videoUrl}');
+        _logger.i('🚨 [MQTT] - Image MIME: ${alert.imageMimeType}');
+        _logger.i(
+          '🚨 [MQTT] - Image Data Length: ${alert.imageData?.length ?? 0}',
+        );
         _logger.i('🚨 [MQTT] - Timestamp: ${alert.timestamp}');
         _logger.i('🚨 [MQTT] - Is Active: ${alert.isActive}');
+
+        // Verify complete image data is stored (without logging the full data to avoid truncation)
+        if (alert.imageData != null) {
+          final imageLength = alert.imageData!.length;
+          final firstChars = alert.imageData!.substring(0, 50);
+          final lastChars = alert.imageData!.substring(imageLength - 50);
+
+          _logger.i('🚨 [MQTT] - Alert Image Data Verification:');
+          _logger.i('🚨 [MQTT] - Total Length: $imageLength chars');
+          _logger.i('🚨 [MQTT] - First 50 chars: "$firstChars"');
+          _logger.i('🚨 [MQTT] - Last 50 chars: "$lastChars"');
+          _logger.i(
+            '🚨 [MQTT] - Data integrity check: ${_verifyBase64Integrity(alert.imageData!)}',
+          );
+
+          print('🚨 [MQTT] - Alert Image Data Verification:');
+          print('🚨 [MQTT] - Total Length: $imageLength chars');
+          print('🚨 [MQTT] - First 50 chars: "$firstChars"');
+          print('🚨 [MQTT] - Last 50 chars: "$lastChars"');
+          print(
+            '🚨 [MQTT] - Data integrity check: ${_verifyBase64Integrity(alert.imageData!)}',
+          );
+        }
 
         _logger.i('🚨 [MQTT] Broadcasting fraud alert to stream...');
         _alertController.add(alert);
@@ -439,19 +553,18 @@ class MqttService {
       }
     }
 
-    // Use existing transaction IDs from checkout start (should always exist for checkout end)
+    // Use existing transaction ID from checkout start, but generate NEW document ID for each request
     final transactionId = _currentTransactionId ?? _generateUuid();
-    final documentId = _currentDocumentId ?? _generateUuid();
+    final documentId = _generateUuid(); // Always generate new document ID
 
-    // If IDs were missing, store them for consistency (shouldn't happen for checkout end)
+    // If transaction ID was missing, store it for consistency (shouldn't happen for checkout end)
     _currentTransactionId ??= transactionId;
-    _currentDocumentId ??= documentId;
 
     _logger.i(
-      '🆔 [MQTT] CHECKOUT END: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] CHECKOUT END: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
     print(
-      '🆔 [MQTT] CHECKOUT END: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] CHECKOUT END: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
 
     final String message = jsonEncode({
@@ -486,19 +599,18 @@ class MqttService {
   Future<bool> sendItemScanEvent({String? uiStatus}) async {
     final String itemScanTopic = '${_topicPrefix}$_terminalId/general/outbound';
 
-    // Use existing transaction IDs from checkout start, or generate if missing
+    // Use existing transaction ID from checkout start, but generate NEW document ID for each request
     final transactionId = _currentTransactionId ?? _generateUuid();
-    final documentId = _currentDocumentId ?? _generateUuid();
+    final documentId = _generateUuid(); // Always generate new document ID
 
-    // If IDs were missing, store them for consistency
+    // If transaction ID was missing, store it for consistency
     _currentTransactionId ??= transactionId;
-    _currentDocumentId ??= documentId;
 
     _logger.i(
-      '🆔 [MQTT] ITEM SCAN: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] ITEM SCAN: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
     print(
-      '🆔 [MQTT] ITEM SCAN: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] ITEM SCAN: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
 
     final String message = jsonEncode({
@@ -528,19 +640,18 @@ class MqttService {
   Future<bool> sendItemInfoEvent({String? uiStatus}) async {
     final String itemInfoTopic = '${_topicPrefix}$_terminalId/general/outbound';
 
-    // Use existing transaction IDs from checkout start, or generate if missing
+    // Use existing transaction ID from checkout start, but generate NEW document ID for each request
     final transactionId = _currentTransactionId ?? _generateUuid();
-    final documentId = _currentDocumentId ?? _generateUuid();
+    final documentId = _generateUuid(); // Always generate new document ID
 
-    // If IDs were missing, store them for consistency
+    // If transaction ID was missing, store it for consistency
     _currentTransactionId ??= transactionId;
-    _currentDocumentId ??= documentId;
 
     _logger.i(
-      '🆔 [MQTT] ITEM INFO: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] ITEM INFO: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
     print(
-      '🆔 [MQTT] ITEM INFO: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] ITEM INFO: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
 
     final String message = jsonEncode({
@@ -570,19 +681,18 @@ class MqttService {
   Future<bool> sendPaymentEvent() async {
     final String paymentTopic = '${_topicPrefix}$_terminalId/general/outbound';
 
-    // Use existing transaction IDs from checkout start, or generate if missing
+    // Use existing transaction ID from checkout start, but generate NEW document ID for each request
     final transactionId = _currentTransactionId ?? _generateUuid();
-    final documentId = _currentDocumentId ?? _generateUuid();
+    final documentId = _generateUuid(); // Always generate new document ID
 
-    // If IDs were missing, store them for consistency
+    // If transaction ID was missing, store it for consistency
     _currentTransactionId ??= transactionId;
-    _currentDocumentId ??= documentId;
 
     _logger.i(
-      '🆔 [MQTT] PAYMENT: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] PAYMENT: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
     print(
-      '🆔 [MQTT] PAYMENT: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] PAYMENT: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
 
     final String message = jsonEncode({
@@ -612,19 +722,18 @@ class MqttService {
   Future<bool> sendFraudFeedback(String alertId, String feedbackType) async {
     final String feedbackTopic = '${_topicPrefix}$_terminalId/general/outbound';
 
-    // Use existing transaction IDs from checkout start, or generate if missing
+    // Use existing transaction ID from checkout start, but generate NEW document ID for each request
     final transactionId = _currentTransactionId ?? _generateUuid();
-    final documentId = _currentDocumentId ?? _generateUuid();
+    final documentId = _generateUuid(); // Always generate new document ID
 
-    // If IDs were missing, store them for consistency
+    // If transaction ID was missing, store it for consistency
     _currentTransactionId ??= transactionId;
-    _currentDocumentId ??= documentId;
 
     _logger.i(
-      '🆔 [MQTT] FRAUD FEEDBACK: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] FRAUD FEEDBACK: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
     print(
-      '🆔 [MQTT] FRAUD FEEDBACK: Using transaction ID: ${transactionId.substring(0, 8)}...',
+      '🆔 [MQTT] FRAUD FEEDBACK: Using transaction ID: ${transactionId.substring(0, 8)}... | NEW document ID: ${documentId.substring(0, 8)}...',
     );
 
     final String message = jsonEncode({
@@ -802,14 +911,24 @@ class MqttService {
 
   // Get current topic configuration
   Map<String, String> getTopicConfiguration() {
-    return {'topicPrefix': _topicPrefix, 'alertsTopic': _alertsTopic};
+    return {
+      'topicPrefix': _topicPrefix,
+      'alertsTopic': _alertsTopic,
+      'fraudInboundTopic': _fraudInboundTopic,
+    };
   }
 
   // Get the alerts topic for external use
   String get alertsTopic => _alertsTopic;
 
+  // Get the fraud inbound topic for external use
+  String get fraudInboundTopic => _fraudInboundTopic;
+
   // Get the topic prefix for external use
   String get topicPrefix => _topicPrefix;
+
+  // Get the current terminal ID for external use
+  String get terminalId => _terminalId;
 
   // Check connection status without attempting to connect
   Map<String, dynamic> getConnectionStatus() {
@@ -912,30 +1031,51 @@ class MqttService {
     _logger.i('✅ [MQTT] Settings updated successfully');
   }
 
+  // Update terminal ID
+  void updateTerminalId(String terminalId) {
+    _logger.i('🔧 [MQTT] Updating terminal ID: $_terminalId → $terminalId');
+    _terminalId = terminalId;
+    _logger.i('✅ [MQTT] Terminal ID updated successfully');
+  }
+
+  // Update topic prefix
+  void updateTopicPrefix(String topicPrefix) {
+    _logger.i('🔧 [MQTT] Updating topic prefix: $_topicPrefix → $topicPrefix');
+    // Note: _topicPrefix is static const, so we can't change it at runtime
+    // This would require a more significant refactor to make it dynamic
+    _logger.w(
+      '⚠️ [MQTT] Topic prefix is currently static and cannot be changed at runtime',
+    );
+  }
+
   /// Reset transaction IDs for new transaction
   void resetTransactionIds() {
     _currentTransactionId = null;
-    _currentDocumentId = null;
-    _logger.i('🔄 [MQTT] Transaction IDs reset for new transaction');
-    print('🔄 [MQTT] Transaction IDs reset for new transaction');
+    // Note: _currentDocumentId is no longer stored since we generate new document ID for each request
+    _logger.i(
+      '🔄 [MQTT] Transaction ID reset for new transaction (document IDs are now generated per request)',
+    );
+    print(
+      '🔄 [MQTT] Transaction ID reset for new transaction (document IDs are now generated per request)',
+    );
   }
 
   /// Get current transaction info for debugging
   Map<String, String?> getTransactionInfo() {
     return {
       'transactionId': _currentTransactionId,
-      'documentId': _currentDocumentId,
+      'documentId': 'Generated per request (not stored)',
     };
   }
 
   /// Get current subscription info for debugging
   Map<String, dynamic> getSubscriptionInfo() {
     return {
-      'subscribedTopic': _alertsTopic,
+      'subscribedTopics': [_alertsTopic, _fraudInboundTopic],
       'terminalId': _terminalId,
       'clientId': _client?.clientIdentifier ?? 'Not connected',
       'isConnected': _isConnected,
-      'expectedInboundTopic': _alertsTopic,
+      'expectedInboundTopics': [_alertsTopic, _fraudInboundTopic],
       'ourOutboundTopic': '${_topicPrefix}$_terminalId/general/outbound',
     };
   }
@@ -949,12 +1089,12 @@ class MqttService {
     print('🔍 [MQTT] - Our Terminal ID: $_terminalId');
     _logger.i('🔍 [MQTT] - Our Client ID: ${info['clientId']}');
     print('🔍 [MQTT] - Our Client ID: ${info['clientId']}');
-    _logger.i('🔍 [MQTT] - Subscribed to: ${info['subscribedTopic']}');
-    print('🔍 [MQTT] - Subscribed to: ${info['subscribedTopic']}');
+    _logger.i('🔍 [MQTT] - Subscribed to: ${info['subscribedTopics']}');
+    print('🔍 [MQTT] - Subscribed to: ${info['subscribedTopics']}');
     _logger.i('🔍 [MQTT] - We publish to: ${info['ourOutboundTopic']}');
     print('🔍 [MQTT] - We publish to: ${info['ourOutboundTopic']}');
-    _logger.i('🔍 [MQTT] - Expected inbound: ${info['expectedInboundTopic']}');
-    print('🔍 [MQTT] - Expected inbound: ${info['expectedInboundTopic']}');
+    _logger.i('🔍 [MQTT] - Expected inbound: ${info['expectedInboundTopics']}');
+    print('🔍 [MQTT] - Expected inbound: ${info['expectedInboundTopics']}');
     _logger.i('🔍 [MQTT] - Connection status: ${info['isConnected']}');
     print('🔍 [MQTT] - Connection status: ${info['isConnected']}');
   }
