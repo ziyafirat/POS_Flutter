@@ -7,14 +7,18 @@ import '../models/alert_message.dart';
 import '../services/mqtt_service.dart';
 import '../services/web_api_service.dart';
 import '../services/scanner_service.dart';
+import '../services/lamp_service.dart';
+import '../models/parsed_item.dart';
 import '../widgets/payment_popup.dart';
 import '../widgets/processing_popup.dart';
+import '../widgets/printing_popup.dart';
 import 'language_controller.dart';
 
 class AppController extends GetxController {
   final Logger _logger = Logger();
   late final MqttService _mqttService;
   late final ScannerService _scannerService;
+  late final LampService _lampService;
 
   // Reactive state
   final Rx<AppState> _appState = AppState(
@@ -26,7 +30,11 @@ class AppController extends GetxController {
 
   final Rx<AlertMessage?> _currentAlert = Rx<AlertMessage?>(null);
   final RxList<String> _scannedItems = <String>[].obs;
+  final RxList<ParsedItem> _parsedItems = <ParsedItem>[].obs;
   final RxDouble _totalAmount = 0.0.obs;
+
+  // Cache for itemline data comparison to skip unnecessary updates
+  String _lastItemlineHash = '';
   final RxString _terminalId = '500'.obs;
   final RxBool _isProcessingPayment = false.obs;
   final RxBool _userInitiatedNavigation = false.obs;
@@ -35,19 +43,39 @@ class AppController extends GetxController {
   // Track current popup substate to prevent duplicates
   String _currentPopupSubstate = '';
 
-  // Track previous substate to determine 1002 behavior
-  String _previousSubstate = '';
+  // Track user scanning session to ignore 1008 during active scanning
+  final RxBool _userScanningSession = false.obs;
+
+  // Track payment flow state - enabled on 1010, disabled on 1008
+  bool _paymentFlowActive = false;
+
+  // Track start page stay state - enabled after 1008, disabled on 1010
+  bool _stayOnStartPageUntilManualStart = false;
+
+  // Flags to prevent duplicate MQTT checkout events
+  bool _canSendCheckoutStart = true; // Initially can send start event
+  bool _canSendCheckoutEnd = false; // Cannot send end until start is sent
+  bool _canSendPaymentEvent =
+      true; // Can send payment event once per 1010 substate
 
   // Getters
   Rx<AppState> get appState => _appState;
   AlertMessage? get currentAlert => _currentAlert.value;
   List<String> get scannedItems => _scannedItems;
+  List<ParsedItem> get parsedItems => _parsedItems;
   double get totalAmount => _totalAmount.value;
   bool get isAlertActive => _currentAlert.value?.isActive ?? false;
   String? get terminalId => _terminalId.value;
   RxBool get isProcessingPayment => _isProcessingPayment;
   bool get userInitiatedNavigation => _userInitiatedNavigation.value;
   bool get posOverrideMode => _posOverrideMode.value;
+  bool get userScanningSession => _userScanningSession.value;
+  bool get stayOnStartPageUntilManualStart => _stayOnStartPageUntilManualStart;
+  bool get canSendCheckoutStart => _canSendCheckoutStart;
+  bool get canSendCheckoutEnd => _canSendCheckoutEnd;
+  bool get canSendPaymentEvent => _canSendPaymentEvent;
+  MqttService get mqttService => _mqttService;
+  LampService get lampService => _lampService;
 
   // Stream subscriptions
   StreamSubscription<AlertMessage>? _alertSubscription;
@@ -60,9 +88,11 @@ class AppController extends GetxController {
     Get.put(LanguageController());
     Get.put(WebApiService());
     Get.put(ScannerService());
+    Get.put(LampService());
     _mqttService =
         Get.find<MqttService>(); // Get the already registered MQTT service
     _scannerService = Get.find<ScannerService>(); // Get the scanner service
+    _lampService = Get.find<LampService>(); // Get the lamp service
     _initializeServices();
     _setupAlertListener();
     _setupScannerListener();
@@ -95,6 +125,9 @@ class AppController extends GetxController {
       _updateMqttStatus(
         mqttConnected ? ConnectionStatus.connected : ConnectionStatus.error,
       );
+
+      // Start connection monitoring for auto-reconnection
+      _mqttService.startConnectionMonitoring();
 
       // Start Web API Service
       final webApiService = Get.find<WebApiService>();
@@ -221,6 +254,17 @@ class AppController extends GetxController {
       final webApiService = Get.find<WebApiService>();
       webApiService.sendOneTimeRequest(displayLine);
 
+      // Reset scanning session flag when item is actually scanned
+      if (_userScanningSession.value) {
+        _userScanningSession.value = false;
+        _logger.i(
+          '🔓 User scanning session ended - item scanned, will now respond to substate 1008',
+        );
+        print(
+          '🔓 User scanning session ended - item scanned, will now respond to substate 1008',
+        );
+      }
+
       _logger.i('✅ Formatted barcode sent to API successfully');
       print('🔍 Formatted barcode "$displayLine" sent to API');
     } catch (e) {
@@ -244,10 +288,59 @@ class AppController extends GetxController {
     );
     _appState.value = newState;
     _appState.refresh();
+
+    // Update lamp color based on current screen
+    _updateLampColor(newState.currentScreen, errorMessage);
   }
 
   void _updateMqttStatus(ConnectionStatus status) {
     _updateAppState(mqttStatus: status);
+  }
+
+  /// Update lamp color based on current screen
+  void _updateLampColor(AppScreen screen, String? errorMessage) {
+    switch (screen) {
+      case AppScreen.error:
+        // Blinking red for error page (especially for assistance calls)
+        if (errorMessage?.contains('Assistance requested') == true) {
+          _lampService.startBlinking(LampColor.red);
+          _logger.i('💡 [LAMP] Error page (assistance) - blinking red');
+        } else {
+          _lampService.setColor(LampColor.red);
+          _logger.i('💡 [LAMP] Error page - solid red');
+        }
+        break;
+
+      case AppScreen.terminalClosed:
+        // Solid red for terminal closed
+        _lampService.setColor(LampColor.red);
+        _logger.i('💡 [LAMP] Terminal closed - solid red');
+        break;
+
+      case AppScreen.start:
+        // Green for start page
+        _lampService.setColor(LampColor.green);
+        _logger.i('💡 [LAMP] Start page - green');
+        break;
+
+      case AppScreen.itemScan:
+        // Blue for item scan page
+        _lampService.setColor(LampColor.blue);
+        _logger.i('💡 [LAMP] Item scan page - blue');
+        break;
+
+      case AppScreen.posCashier:
+        // Green for POS cashier
+        _lampService.setColor(LampColor.green);
+        _logger.i('💡 [LAMP] POS Cashier page - green');
+        break;
+
+      default:
+        // Default to off for other screens
+        _lampService.turnOff();
+        _logger.i('💡 [LAMP] Other screen ($screen) - off');
+        break;
+    }
   }
 
   void _navigateToScreen(AppScreen screen, {String? errorMessage}) {
@@ -280,6 +373,23 @@ class AppController extends GetxController {
       print('🔓 POS Override mode deactivated - returning to normal operation');
     }
 
+    // Clear scanning session flag when returning to start page
+    if (_userScanningSession.value) {
+      _userScanningSession.value = false;
+      _logger.i('🔓 User scanning session cleared when returning to start');
+      print('🔓 User scanning session cleared when returning to start');
+    }
+
+    // Clear payment flow flag when returning to start page
+    if (_paymentFlowActive) {
+      _paymentFlowActive = false;
+      _logger.i('💳 Payment flow flag cleared when returning to start');
+      print('💳 Payment flow flag cleared when returning to start');
+    }
+
+    // Clear itemline cache for fresh session
+    clearItemlineCache();
+
     _navigateToScreen(AppScreen.start);
   }
 
@@ -298,6 +408,23 @@ class AppController extends GetxController {
       'Calling _navigateToScreen with AppScreen.itemScan (user-initiated)',
     );
     _userInitiatedNavigation.value = true;
+
+    // Set scanning session flag when user manually navigates to item scan
+    _userScanningSession.value = true;
+    _logger.i('🔒 User scanning session started - will ignore substate 1008');
+    print('🔒 User scanning session started - will ignore substate 1008');
+
+    // Disable start page stay flag when user manually starts new session
+    if (_stayOnStartPageUntilManualStart) {
+      _stayOnStartPageUntilManualStart = false;
+      _logger.i(
+        '🔓 Start page stay flag disabled - user manually started new session',
+      );
+      print(
+        '🔓 Start page stay flag disabled - user manually started new session',
+      );
+    }
+
     _navigateToScreen(AppScreen.itemScan);
   }
 
@@ -306,21 +433,15 @@ class AppController extends GetxController {
       _logger.w('Cannot navigate to payment - alert is active');
       return;
     }
-    // Show payment popup instead of navigating to payment page
-    // This keeps the item scan page in the background
-    if (_appState.value.currentScreen == AppScreen.itemScan) {
-      _logger.i('🎯 Showing payment popup over item scan page...');
-      print('🎯 Showing payment popup over item scan page...');
+    // Show payment popup (payment page has been removed)
+    _logger.i('🎯 Showing payment popup...');
+    print('🎯 Showing payment popup...');
 
-      Get.dialog(
-        const PaymentPopup(),
-        barrierDismissible: false,
-        name: 'payment_popup', // Named route for tracking
-      );
-    } else {
-      // For other screens, navigate normally
-      _navigateToScreen(AppScreen.payment);
-    }
+    Get.dialog(
+      const PaymentPopup(),
+      barrierDismissible: false,
+      name: 'payment_popup', // Named route for tracking
+    );
   }
 
   void navigateToProcessing() {
@@ -328,21 +449,19 @@ class AppController extends GetxController {
       _logger.w('Cannot navigate to processing - alert is active');
       return;
     }
-    // Show processing popup instead of navigating to processing page
-    // This keeps the item scan page in the background
-    if (_appState.value.currentScreen == AppScreen.itemScan) {
-      _logger.i('🎯 Showing processing popup over item scan page...');
-      print('🎯 Showing processing popup over item scan page...');
+    // Show processing popup (processing page has been removed)
+    _logger.i('🎯 Showing processing popup...');
+    print('🎯 Showing processing popup...');
 
-      Get.dialog(
-        const ProcessingPopup(),
-        barrierDismissible: false,
-        name: 'processing_popup', // Named route for tracking
-      );
-    } else {
-      // For other screens, navigate normally
-      _navigateToScreen(AppScreen.processing);
-    }
+    Get.dialog(
+      const ProcessingPopup(
+        title: 'Processing Transaction',
+        message: 'Please wait while we process your transaction...',
+        icon: Icons.hourglass_empty,
+      ),
+      barrierDismissible: false,
+      name: 'processing_popup',
+    );
   }
 
   void navigateToPrinting() {
@@ -376,8 +495,16 @@ class AppController extends GetxController {
         }
       });
     } else {
-      // For other screens, navigate normally
-      _navigateToScreen(AppScreen.printing);
+      // Show printing popup (printing page has been removed)
+      Get.dialog(
+        const PrintingPopup(
+          title: 'Printing Receipt',
+          message: 'Please wait while we print your receipt...',
+          icon: Icons.print,
+        ),
+        barrierDismissible: false,
+        name: 'printing_popup',
+      );
     }
   }
 
@@ -390,6 +517,28 @@ class AppController extends GetxController {
 
     // Navigate to error page
     _navigateToScreen(AppScreen.error, errorMessage: errorMessage);
+  }
+
+  /// Call for assistance - navigate to error page and stay there
+  void callForAssistance() {
+    _logger.i('🚨 CALL FOR ASSISTANCE: User requested help');
+    print('🚨 CALL FOR ASSISTANCE: User requested help');
+
+    // Close all popups
+    closeAllPopups();
+
+    // Clear all flags to ensure we stay on error page
+    _userScanningSession.value = false;
+    _paymentFlowActive = false;
+
+    // Navigate to error page with assistance message
+    _navigateToScreen(
+      AppScreen.error,
+      errorMessage: 'Assistance requested. Please wait for staff to help you.',
+    );
+
+    // Start lamp blinking red for assistance
+    _lampService.startBlinking(LampColor.red);
   }
 
   /// Close all open popups/dialogs
@@ -478,9 +627,61 @@ class AppController extends GetxController {
   }
 
   void setScannedItems(List<String> items) {
+    // Generate hash for current itemline data
+    final currentHash = _generateItemlineHash(items);
+
+    // Skip update if data hasn't changed
+    if (currentHash == _lastItemlineHash) {
+      // _logger.d('📋 Itemline data unchanged - skipping ListView update'); // Disabled - too verbose
+      return;
+    }
+
+    // Check if new items were added (item count increased)
+    final previousItemCount = _scannedItems.length;
+    final newItemCount = items.length;
+    final hasNewItems = newItemCount > previousItemCount;
+
+    // Update cached hash
+    _lastItemlineHash = currentHash;
+
     _scannedItems.clear();
     _scannedItems.addAll(items);
-    _logger.i('Set scanned items list with ${items.length} items');
+
+    // Also update parsed items for better UI performance
+    _parsedItems.clear();
+    _parsedItems.addAll(items.map((item) => ParsedItem.fromString(item)));
+
+    _logger.i(
+      '⚡ Set scanned items list with ${items.length} items (with parsed cache) - Hash: ${currentHash.substring(0, 8)}...',
+    );
+
+    // Send item scan event if new items were added
+    if (hasNewItems) {
+      final newItemsAdded = newItemCount - previousItemCount;
+      _logger.i('📦 New items detected: $newItemsAdded items added');
+      print('📦 New items detected: $newItemsAdded items added');
+
+      // Send item scan event to MQTT
+      _mqttService.sendItemScanEvent(uiStatus: 'ITEM_SCANNED');
+
+      // Also send item info event
+      _mqttService.sendItemInfoEvent(uiStatus: 'ITEM_ADDED');
+    }
+  }
+
+  /// Generate a simple hash for itemline data to detect changes
+  String _generateItemlineHash(List<String> items) {
+    if (items.isEmpty) return '';
+
+    // Create a simple hash based on items count and content
+    final combined = items.join('|');
+    return combined.hashCode.toString();
+  }
+
+  /// Clear itemline cache when starting new session
+  void clearItemlineCache() {
+    _lastItemlineHash = '';
+    _logger.i('🗑️ Itemline cache cleared');
   }
 
   // Alert management
@@ -547,13 +748,9 @@ class AppController extends GetxController {
 
   // Update total amount method
   void updateTotalAmount(double amount) {
-    print(
-      '🔥 LATEST CODE: AppController.updateTotalAmount called with: $amount',
-    );
+    // print('🔥 LATEST CODE: AppController.updateTotalAmount called with: $amount'); // Disabled - too verbose
     _totalAmount.value = amount;
-    print(
-      '✅ LATEST CODE: Total amount RxDouble updated to: ${_totalAmount.value} AED',
-    );
+    // print('✅ LATEST CODE: Total amount RxDouble updated to: ${_totalAmount.value} AED'); // Disabled - too verbose
   }
 
   // Display text for API Display field
@@ -570,12 +767,223 @@ class AppController extends GetxController {
   String get posSubState => _posSubState.value;
 
   void updatePosSubState(String state) {
-    _logger.i('🔄 POS SubState updated: $state (previous: $_previousSubstate)');
-    print('🔄 POS SubState updated: $state (previous: $_previousSubstate)');
+    final previousState = _posSubState.value;
+    _logger.i('🔄 POS SubState updated: $previousState → $state');
+    print('🔄 POS SubState updated: $previousState → $state');
+    print('📱 Current Screen: ${_appState.value.currentScreen}');
+    print('💬 Dialog Open: ${Get.isDialogOpen}');
+    print('🎯 Payment Flow Active: $_paymentFlowActive');
+    print('🔒 Stay on Start Page: $_stayOnStartPageUntilManualStart');
 
-    // Store previous substate before updating
-    _previousSubstate = _posSubState.value;
     _posSubState.value = state;
+
+    // ENHANCED PROTECTION: Check if we're on protected pages and should stay there
+    final currentScreen = _appState.value.currentScreen;
+    if (currentScreen == AppScreen.posCashier ||
+        currentScreen == AppScreen.assistant ||
+        currentScreen == AppScreen.parameters) {
+      _logger.i(
+        '🔒 PROTECTED PAGE: Staying on $currentScreen screen - ignoring substate $state navigation',
+      );
+      print(
+        '🔒 PROTECTED PAGE: Staying on $currentScreen screen - ignoring substate $state navigation',
+      );
+      if (currentScreen == AppScreen.posCashier) {
+        print('🔒 Use "Customer Screen" button to exit POS Cashier mode');
+      } else {
+        print('🔒 Use navigation buttons to exit $currentScreen page');
+      }
+      return; // Exit early - don't handle any navigation when on protected pages
+    }
+
+    // Handle payment flow flags
+    if (state == '1010') {
+      _paymentFlowActive = true;
+      // Disable start page stay flag when new transaction starts
+      _stayOnStartPageUntilManualStart = false;
+      _logger.i(
+        '💳 Payment flow started - flag enabled, start page stay disabled',
+      );
+      print('💳 Payment flow started - flag enabled, start page stay disabled');
+
+      // Send payment UI event to MQTT (one time only)
+      if (_canSendPaymentEvent) {
+        _logger.i(
+          '💳 Substate 1010: Sending payment UI event to MQTT (first time)',
+        );
+        print(
+          '💳 Substate 1010: Sending payment UI event to MQTT (first time)',
+        );
+        _mqttService.sendPaymentEvent();
+
+        // Disable payment event flag until next transaction
+        _canSendPaymentEvent = false;
+        _logger.i('🔄 Payment event flag disabled until next transaction');
+        print('🔄 Payment event flag disabled until next transaction');
+      } else {
+        _logger.i(
+          '🚫 Substate 1010: Payment UI event already sent - skipping duplicate',
+        );
+        print(
+          '🚫 Substate 1010: Payment UI event already sent - skipping duplicate',
+        );
+      }
+    } else if (state == '1008') {
+      if (_paymentFlowActive) {
+        _paymentFlowActive = false;
+        // Enable start page stay flag when transaction completes
+        _stayOnStartPageUntilManualStart = true;
+        _logger.i(
+          '🏁 Payment flow ended - flag disabled, start page stay enabled',
+        );
+        print('🏁 Payment flow ended - flag disabled, start page stay enabled');
+      }
+    }
+
+    // Special handling for substate 1008 - behavior depends on current flags
+    if (state == '1008') {
+      if (_userScanningSession.value) {
+        _logger.i('🔒 Substate 1008: Ignored - user scanning session active');
+        print('🔒 Substate 1008: Ignored - user scanning session active');
+        // Close any popups but stay on item scan page
+        closeAllPopups();
+        _currentPopupSubstate = '';
+        return; // Exit early - don't navigate to start
+      } else if (_paymentFlowActive) {
+        _logger.i(
+          '🔄 Substate 1008: Payment flow complete - stay on item scan page',
+        );
+        print(
+          '🔄 Substate 1008: Payment flow complete - stay on item scan page',
+        );
+        // Payment flow flag is already disabled above
+        // Close any popups but stay on item scan page
+        closeAllPopups();
+        _currentPopupSubstate = '';
+        return; // Exit early - don't navigate to start
+      } else {
+        _logger.i(
+          '🏁 Substate 1008: Closing all popups and returning to start',
+        );
+        print('🏁 Substate 1008: Closing all popups and returning to start');
+        closeAllPopups();
+        _currentPopupSubstate = '';
+        navigateToStart();
+
+        // Enable start page stay flag for next transaction
+        _stayOnStartPageUntilManualStart = true;
+        _logger.i(
+          '🔒 Start page stay flag enabled - will stay on start until manual start button press',
+        );
+        print(
+          '🔒 Start page stay flag enabled - will stay on start until manual start button press',
+        );
+
+        return; // Exit early since we've handled this substate
+      }
+    }
+
+    // Special handling for error substates - navigate to error page
+    if (state == '10333' || state == '10356' || state == '10398') {
+      _logger.i('🚨 Error substate $state: Navigating to error page');
+      print('🚨 Error substate $state: Navigating to error page');
+
+      // Clear payment flow flag on error
+      _paymentFlowActive = false;
+
+      closeAllPopups();
+      navigateToError(errorMessage: 'System error (SubState: $state)');
+      return; // Exit early since we've handled this substate
+    }
+
+    // Special handling for substate 1001 - send checkout start event to MQTT
+    if (state == '1001') {
+      // Send checkout start event only if allowed (prevent duplicates)
+      if (_canSendCheckoutStart) {
+        _logger.i(
+          '🛒 Substate 1001: Sending checkout start event to MQTT (first time)',
+        );
+        print(
+          '🛒 Substate 1001: Sending checkout start event to MQTT (first time)',
+        );
+
+        // Send checkout start event (will generate new transaction IDs automatically)
+        _mqttService.sendCheckoutStartEvent();
+
+        // Update flags: disable start, enable end, enable payment
+        _canSendCheckoutStart = false;
+        _canSendCheckoutEnd = true;
+        _canSendPaymentEvent =
+            true; // Reset payment event flag for new transaction
+        _logger.i('🔄 MQTT Flags: Start=false, End=true, Payment=true');
+        print('🔄 MQTT Flags: Start=false, End=true, Payment=true');
+      } else {
+        _logger.i(
+          '🚫 Substate 1001: Checkout start event already sent - skipping duplicate',
+        );
+        print(
+          '🚫 Substate 1001: Checkout start event already sent - skipping duplicate',
+        );
+      }
+
+      // Always navigate from start page to item scan on substate 1001
+      if (_appState.value.currentScreen == AppScreen.start) {
+        _logger.i(
+          '📱 Substate 1001 on start page: Always navigating to item scan page',
+        );
+        print(
+          '📱 Substate 1001 on start page: Always navigating to item scan page',
+        );
+        navigateToItemScan();
+        // Reset the stay flag since we're starting a new transaction
+        _stayOnStartPageUntilManualStart = false;
+      }
+    }
+
+    // Special handling for substate 7006 - send checkout end event to MQTT
+    if (state == '7006') {
+      // Send checkout end event only if allowed (prevent duplicates)
+      if (_canSendCheckoutEnd) {
+        _logger.i(
+          '🏁 Substate 7006: Sending checkout end event to MQTT (first time)',
+        );
+        print(
+          '🏁 Substate 7006: Sending checkout end event to MQTT (first time)',
+        );
+        _mqttService.sendCheckoutEndEvent();
+
+        // Update flags: enable start, disable end
+        _canSendCheckoutStart = true;
+        _canSendCheckoutEnd = false;
+        _logger.i('🔄 MQTT Flags: Start=true, End=false');
+        print('🔄 MQTT Flags: Start=true, End=false');
+      } else {
+        _logger.i(
+          '🚫 Substate 7006: Checkout end event already sent or start not sent - skipping duplicate',
+        );
+        print(
+          '🚫 Substate 7006: Checkout end event already sent or start not sent - skipping duplicate',
+        );
+      }
+    }
+
+    // Special handling for substate 1002 when on start page - navigate to item scan
+    if (state == '1002' && _appState.value.currentScreen == AppScreen.start) {
+      if (_stayOnStartPageUntilManualStart) {
+        _logger.i(
+          '🔒 Substate 1002 on start page: Staying on start page (manual start required)',
+        );
+        print(
+          '🔒 Substate 1002 on start page: Staying on start page (manual start required)',
+        );
+      } else {
+        _logger.i(
+          '📱 Substate 1002 on start page: Navigating to item scan page',
+        );
+        print('📱 Substate 1002 on start page: Navigating to item scan page');
+        navigateToItemScan();
+      }
+    }
 
     // Handle substate-driven navigation
     _handleSubstateNavigation(state);
@@ -585,6 +993,26 @@ class AppController extends GetxController {
     _logger.i('🎯 SUBSTATE NAVIGATION: $state');
     print('🎯 SUBSTATE NAVIGATION: $state');
     print('📱 Current Screen: ${_appState.value.currentScreen}');
+
+    // Check if we're on persistent pages that should stay open
+    final currentScreen = _appState.value.currentScreen;
+    if (currentScreen == AppScreen.posCashier ||
+        currentScreen == AppScreen.assistant ||
+        currentScreen == AppScreen.parameters ||
+        (currentScreen == AppScreen.error &&
+            _appState.value.errorMessage?.contains('Assistance requested') ==
+                true)) {
+      _logger.i(
+        '🔒 PERSISTENT PAGE PROTECTION: On $currentScreen - ignoring substate $state navigation',
+      );
+      print(
+        '🔒 PERSISTENT PAGE PROTECTION: On $currentScreen - ignoring substate $state navigation',
+      );
+      print(
+        '🔒 POS Cashier screen will remain stable until "Customer Screen" button is pressed',
+      );
+      return; // Exit early - don't handle navigation for these pages
+    }
 
     // Handle terminal closed substates (only if not in POS override mode)
     if ((state == '11043' || state == '11042') && !_posOverrideMode.value) {
@@ -607,6 +1035,33 @@ class AppController extends GetxController {
     // Handle popup navigation when on item scan page
     if (_appState.value.currentScreen == AppScreen.itemScan) {
       _handleItemScanPopupNavigation(state);
+    } else {
+      // Special case: Handle processing popup for 1002 when payment flow is active, even if not on item scan page
+      if (state == '1002' && _paymentFlowActive) {
+        _logger.i(
+          '🔄 Substate 1002 with active payment flow: Showing processing popup (not on item scan page)',
+        );
+        print(
+          '🔄 Substate 1002 with active payment flow: Showing processing popup (not on item scan page)',
+        );
+
+        // Close any existing popup first
+        if (Get.isDialogOpen == true) {
+          Get.back();
+        }
+
+        // Show processing popup
+        Get.dialog(
+          const ProcessingPopup(
+            title: 'Processing Payment',
+            message: 'Please wait while we process your payment...',
+            icon: Icons.hourglass_empty,
+          ),
+          barrierDismissible: false,
+          name: 'processing_popup',
+        );
+        _currentPopupSubstate = state;
+      }
     }
   }
 
@@ -644,6 +1099,23 @@ class AppController extends GetxController {
         });
         break;
 
+      case '5004':
+        // Show processing popup for substate 5004
+        _logger.i('🔄 Substate 5004: Showing processing popup');
+        print('🔄 Substate 5004: Showing processing popup');
+        _showPopupOverItemScan('ProcessingPopup', state, () {
+          Get.dialog(
+            const ProcessingPopup(
+              title: 'Processing Transaction',
+              message: 'Please wait while we process your transaction...',
+              icon: Icons.hourglass_empty,
+            ),
+            barrierDismissible: false,
+            name: 'processing_popup',
+          );
+        });
+        break;
+
       case '7006':
         _logger.i('🖨️ Substate 7006: Printing - showing printing popup');
         print('🖨️ Substate 7006: Printing - showing printing popup');
@@ -661,14 +1133,15 @@ class AppController extends GetxController {
         break;
 
       case '1002':
-        // Only show processing popup if previous substate was 1010 (payment flow)
-        if (_previousSubstate == '1010') {
+        // Only show processing popup if payment flow is active (after 1010)
+        if (_paymentFlowActive) {
           _logger.i(
-            '🔄 Substate 1002: Processing after payment (1010) - showing processing popup',
+            '🔄 Substate 1002: Processing payment (payment flow active) - showing processing popup',
           );
           print(
-            '🔄 Substate 1002: Processing after payment (1010) - showing processing popup',
+            '🔄 Substate 1002: Processing payment (payment flow active) - showing processing popup',
           );
+
           _showPopupOverItemScan('ProcessingPopup', state, () {
             Get.dialog(
               const ProcessingPopup(
@@ -682,9 +1155,11 @@ class AppController extends GetxController {
           });
         } else {
           _logger.i(
-            '📱 Substate 1002: Stay on item scan page (no previous 1010)',
+            '📱 Substate 1002: Stay on item scan page (no active payment flow)',
           );
-          print('📱 Substate 1002: Stay on item scan page (no previous 1010)');
+          print(
+            '📱 Substate 1002: Stay on item scan page (no active payment flow)',
+          );
           // Close any existing popup and stay on item scan page
           if (Get.isDialogOpen == true) {
             Get.back();
@@ -773,6 +1248,125 @@ class AppController extends GetxController {
     _logger.i('🧪 SIMULATING BARCODE SCAN: $barcode');
     print('🧪 SIMULATING BARCODE SCAN: $barcode');
     _handleScannedBarcode(barcode);
+  }
+
+  // Method to test substate 1001 always navigating to item scan
+  void test1001AlwaysNavigate() {
+    _logger.i('🧪 TEST: Testing substate 1001 always navigates to item scan');
+    print('🧪 TEST: Testing substate 1001 always navigates to item scan');
+
+    // Ensure we're on start page
+    navigateToStart();
+
+    // Enable stay flag to test that 1001 overrides it
+    _stayOnStartPageUntilManualStart = true;
+    _logger.i('🧪 TEST: Stay flag enabled - testing 1001 override');
+    print('🧪 TEST: Stay flag enabled - testing 1001 override');
+
+    // Wait a moment then simulate 1001
+    Timer(const Duration(milliseconds: 500), () {
+      updatePosSubState('1001');
+    });
+  }
+
+  // Method to reset MQTT checkout event flags (for testing or manual reset)
+  void resetCheckoutEventFlags() {
+    _canSendCheckoutStart = true;
+    _canSendCheckoutEnd = false;
+    _canSendPaymentEvent = true;
+    _logger.i(
+      '🔄 MQTT checkout event flags reset: Start=true, End=false, Payment=true',
+    );
+    print(
+      '🔄 MQTT checkout event flags reset: Start=true, End=false, Payment=true',
+    );
+  }
+
+  // Method to get current MQTT flag status (for debugging)
+  Map<String, bool> getCheckoutEventFlagStatus() {
+    return {
+      'canSendCheckoutStart': _canSendCheckoutStart,
+      'canSendCheckoutEnd': _canSendCheckoutEnd,
+      'canSendPaymentEvent': _canSendPaymentEvent,
+    };
+  }
+
+  // Method to test complete checkout event cycle
+  void testCheckoutEventCycle() {
+    _logger.i('🧪 TEST: Testing complete checkout event cycle');
+    print('🧪 TEST: Testing complete checkout event cycle');
+
+    // Reset flags to initial state
+    resetCheckoutEventFlags();
+
+    // Test sequence: 1001 → 7006 → 1001 → 7006
+    navigateToStart();
+
+    Timer(const Duration(milliseconds: 500), () {
+      print('🧪 TEST: Step 1 - Sending first 1001 (should send start event)');
+      updatePosSubState('1001');
+
+      Timer(const Duration(milliseconds: 1000), () {
+        print('🧪 TEST: Step 2 - Sending 7006 (should send end event)');
+        updatePosSubState('7006');
+
+        Timer(const Duration(milliseconds: 1000), () {
+          print(
+            '🧪 TEST: Step 3 - Sending second 1001 (should send start event again)',
+          );
+          updatePosSubState('1001');
+
+          Timer(const Duration(milliseconds: 1000), () {
+            print('🧪 TEST: Step 4 - Sending duplicate 1001 (should skip)');
+            updatePosSubState('1001');
+          });
+        });
+      });
+    });
+  }
+
+  // Method to test protected page navigation resistance
+  void testProtectedPageNavigation() {
+    _logger.i('🧪 TEST: Testing protected page navigation resistance');
+    print('🧪 TEST: Testing protected page navigation resistance');
+
+    // Test assistant page protection
+    navigateToAssistant();
+    Timer(const Duration(milliseconds: 500), () {
+      print(
+        '🧪 TEST: On assistant page - sending substate 1001 (should be ignored)',
+      );
+      updatePosSubState('1001');
+
+      Timer(const Duration(milliseconds: 500), () {
+        print(
+          '🧪 TEST: On assistant page - sending substate 1010 (should be ignored)',
+        );
+        updatePosSubState('1010');
+
+        // Test parameters page protection
+        navigateToParameters();
+        Timer(const Duration(milliseconds: 500), () {
+          print(
+            '🧪 TEST: On parameters page - sending substate 1001 (should be ignored)',
+          );
+          updatePosSubState('1001');
+
+          Timer(const Duration(milliseconds: 500), () {
+            print(
+              '🧪 TEST: On parameters page - sending substate 7006 (should be ignored)',
+            );
+            updatePosSubState('7006');
+
+            // Return to start page
+            Timer(const Duration(milliseconds: 500), () {
+              print('🧪 TEST: Returning to start page');
+              navigateToStart();
+            });
+          });
+        });
+      });
+    });
   }
 
   /// Test method to simulate startup substate handling

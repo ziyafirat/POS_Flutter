@@ -25,15 +25,13 @@ Map<String, dynamic> _$AppStateToJson(AppState instance) => <String, dynamic>{
 const _$AppScreenEnumMap = {
   AppScreen.start: 'start',
   AppScreen.itemScan: 'itemScan',
-  AppScreen.payment: 'payment',
-  AppScreen.processing: 'processing',
-  AppScreen.printing: 'printing',
   AppScreen.error: 'error',
   AppScreen.alert: 'alert',
   AppScreen.fraudAlert: 'fraudAlert',
   AppScreen.assistant: 'assistant',
   AppScreen.posCashier: 'posCashier',
   AppScreen.parameters: 'parameters',
+  AppScreen.terminalClosed: 'terminalClosed',
 };
 
 const _$ConnectionStatusEnumMap = {

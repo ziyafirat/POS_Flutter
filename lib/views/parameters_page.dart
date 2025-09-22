@@ -33,7 +33,7 @@ class _ParametersPageState extends State<ParametersPage> {
       final webApiService = Get.find<WebApiService>();
       final mqttService = Get.find<MqttService>();
       final appController = Get.find<AppController>();
-      
+
       _webApiUrlController.text = webApiService.baseUrl;
       _terminalNumberController.text = appController.terminalId ?? '500';
       _mqttIpController.text = mqttService.brokerHost;
@@ -45,7 +45,8 @@ class _ParametersPageState extends State<ParametersPage> {
       // Handle case where services are not yet initialized
       print('Error loading current settings: $e');
       // Set default values
-      _webApiUrlController.text = 'http://192.168.2.100:50000/AEFProcess/restaefprocess/aefrun/posService';
+      _webApiUrlController.text =
+          'http://192.168.2.100:50000/AEFProcess/restaefprocess/aefrun/posService';
       _terminalNumberController.text = '500';
       _mqttIpController.text = '192.168.2.173';
       _mqttPortController.text = '1883';
@@ -73,11 +74,11 @@ class _ParametersPageState extends State<ParametersPage> {
         // Update Web API Service settings
         final webApiService = Get.find<WebApiService>();
         webApiService.updateBaseUrl(_webApiUrlController.text);
-        
+
         // Update App Controller terminal ID
         final appController = Get.find<AppController>();
         appController.updateTerminalId(_terminalNumberController.text);
-        
+
         // Update MQTT Service settings
         final mqttService = Get.find<MqttService>();
         await mqttService.updateSettings(
@@ -87,11 +88,11 @@ class _ParametersPageState extends State<ParametersPage> {
           password: _mqttPasswordController.text,
           topic: _mqttTopicController.text,
         );
-        
+
         // Reconnect MQTT with new settings
         await mqttService.disconnect();
         await mqttService.connect();
-        
+
         // Show success message
         Get.snackbar(
           'Success',
@@ -100,10 +101,9 @@ class _ParametersPageState extends State<ParametersPage> {
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
-        
+
         // Navigate back
         appController.navigateToStart();
-        
       } catch (e) {
         Get.snackbar(
           'Error',
@@ -121,7 +121,7 @@ class _ParametersPageState extends State<ParametersPage> {
     final appController = Get.find<AppController>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[300],
       appBar: AppBar(
         title: const Text('Parameters'),
         backgroundColor: const Color(0xFFE31E24),
@@ -152,10 +152,11 @@ class _ParametersPageState extends State<ParametersPage> {
                           const SizedBox(width: 8),
                           Text(
                             'Web API Settings',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFE31E24),
-                            ),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFE31E24),
+                                ),
                           ),
                         ],
                       ),
@@ -204,7 +205,7 @@ class _ParametersPageState extends State<ParametersPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // MQTT Settings Section
               Card(
                 elevation: 4,
@@ -219,10 +220,11 @@ class _ParametersPageState extends State<ParametersPage> {
                           const SizedBox(width: 8),
                           Text(
                             'MQTT Settings',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFE31E24),
-                            ),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFE31E24),
+                                ),
                           ),
                         ],
                       ),
@@ -315,7 +317,7 @@ class _ParametersPageState extends State<ParametersPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action Buttons
               Row(
                 children: [

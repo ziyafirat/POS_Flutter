@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -18,14 +17,14 @@ class StartTransaction {
   final String amount;
   final String type;
   final bool success;
-  
+
   StartTransaction({
     required this.sourceid,
     required this.amount,
     required this.type,
     required this.success,
   });
-  
+
   Map<String, dynamic> toJson() {
     return {
       'sourceid': sourceid,
@@ -40,12 +39,9 @@ class StartTransaction {
 class ErrorMessage {
   final int status;
   final String message;
-  
-  ErrorMessage({
-    required this.status,
-    required this.message,
-  });
-  
+
+  ErrorMessage({required this.status, required this.message});
+
   factory ErrorMessage.fromJson(Map<String, dynamic> json) {
     return ErrorMessage(
       status: json['status'] ?? 0,
@@ -59,13 +55,13 @@ class TxnMessage {
   final String? resultCode;
   final String displayText;
   final String? resultCodeDescription;
-  
+
   const TxnMessage({
     this.resultCode,
     required this.displayText,
     this.resultCodeDescription,
   });
-  
+
   Map<String, dynamic> toJson() {
     return {
       'resultCode': resultCode,
@@ -73,7 +69,7 @@ class TxnMessage {
       'resultCodeDescription': resultCodeDescription,
     };
   }
-  
+
   factory TxnMessage.fromJson(Map<String, dynamic> json) {
     return TxnMessage(
       resultCode: json['resultCode'],
@@ -90,7 +86,8 @@ class TxnMessage {
     return TxnMessage(
       resultCode: resultCode ?? this.resultCode,
       displayText: displayText ?? this.displayText,
-      resultCodeDescription: resultCodeDescription ?? this.resultCodeDescription,
+      resultCodeDescription:
+          resultCodeDescription ?? this.resultCodeDescription,
     );
   }
 }
@@ -210,7 +207,7 @@ class NiVm extends GetxController {
     final intUnits = amount.floor();
     StartTransaction startTransaction = StartTransaction(
       sourceid: Uuid().v4(),
-      amount: (intUnits * 100).toString(), // Amount in smallest unit (no cents)
+      amount: intUnits.toString(), // Amount in smallest unit (no cents)
       type: 'eposSale',
       success: false,
     );
@@ -286,7 +283,7 @@ class NiVm extends GetxController {
         // Remove "transaction " (11 characters) from the beginning
         String jsonPart = response.substring(11).trim();
         logWrite("Extracted JSON: $jsonPart");
-        
+
         var txnMessage = TxnMessage.fromJson(
           json.decode(jsonPart) as Map<String, dynamic>,
         );

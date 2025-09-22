@@ -4,7 +4,7 @@ import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
 import '../services/web_api_service.dart';
-import '../widgets/payment_popup.dart';
+import '../widgets/processing_popup.dart';
 import '../widgets/almaya_header.dart';
 
 class ItemScanPage extends StatelessWidget {
@@ -44,13 +44,18 @@ class ItemScanPage extends StatelessWidget {
       // Send API request with DisplayLine <81>
       await webApiService.sendOneTimeRequest('<81>');
 
-      // Show payment popup instead of navigating to payment page
-      _logger.i('🎯 Showing payment popup...');
-      print('🎯 Showing payment popup...');
+      // Show processing popup until substate changes
+      _logger.i('🔄 Showing processing popup until substate changes...');
+      print('🔄 Showing processing popup until substate changes...');
 
       Get.dialog(
-        const PaymentPopup(),
+        const ProcessingPopup(
+          title: 'Processing Request',
+          message: 'Please wait while we process your request...',
+          icon: Icons.hourglass_empty,
+        ),
         barrierDismissible: false, // Prevent dismissing by tapping outside
+        name: 'finish_pay_processing_popup',
       );
     } catch (e) {
       // Log error
@@ -76,7 +81,7 @@ class ItemScanPage extends StatelessWidget {
     final LanguageController langController = Get.find<LanguageController>();
 
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: Colors.grey[300],
       body: Column(
         children: [
           // Header with Almaya logo
@@ -88,7 +93,7 @@ class ItemScanPage extends StatelessWidget {
           Expanded(
             flex: 8,
             child: Container(
-              color: Colors.white,
+              color: Colors.grey[100],
               child: Column(
                 children: [
                   // Top gray area for product display
@@ -145,10 +150,10 @@ class ItemScanPage extends StatelessWidget {
                             ),
                           ),
 
-                          // Scanned items list
+                          // Scanned items list - Optimized with ParsedItem
                           Expanded(
                             child: Obx(() {
-                              if (controller.scannedItems.isEmpty) {
+                              if (controller.parsedItems.isEmpty) {
                                 return Center(
                                   child: Text(
                                     langController.noItemsScanned,
@@ -161,20 +166,9 @@ class ItemScanPage extends StatelessWidget {
                               }
 
                               return ListView.builder(
-                                itemCount: controller.scannedItems.length,
+                                itemCount: controller.parsedItems.length,
                                 itemBuilder: (context, index) {
-                                  final itemString =
-                                      controller.scannedItems[index];
-                                  // Parse item format: barcode:displayName:uom:price:qty:vr
-                                  final parts = itemString.split(':');
-                                  final displayName = parts.length > 1
-                                      ? parts[1]
-                                      : 'Unknown Item';
-                                  final price = parts.length > 3
-                                      ? parts[3]
-                                      : '0.00';
-                                  final qty = parts.length > 4 ? parts[4] : '1';
-                                  final uom = parts.length > 2 ? parts[2] : '';
+                                  final item = controller.parsedItems[index];
 
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 8),
@@ -194,15 +188,15 @@ class ItemScanPage extends StatelessWidget {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                displayName,
+                                                item.displayName,
                                                 style: const TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
-                                              if (uom.isNotEmpty)
+                                              if (item.uom.isNotEmpty)
                                                 Text(
-                                                  'Qty: $qty $uom',
+                                                  item.formattedQuantity,
                                                   style: const TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.grey,
@@ -213,7 +207,7 @@ class ItemScanPage extends StatelessWidget {
                                         ),
                                         Text(
                                           langController.formatCurrency(
-                                            double.tryParse(price) ?? 0.0,
+                                            item.priceAsDouble,
                                           ),
                                           style: TextStyle(
                                             fontSize: 14,

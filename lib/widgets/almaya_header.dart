@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/language_controller.dart';
+import '../controllers/app_controller.dart';
 
 class AlmayaHeader extends StatelessWidget {
   final String? pageTitle;
@@ -143,7 +144,9 @@ class AlmayaHeader extends StatelessWidget {
           height: 40,
           child: ElevatedButton.icon(
             onPressed: () {
-              // Help functionality
+              // Call for assistance - navigate to error page and stay there
+              final appController = Get.find<AppController>();
+              appController.callForAssistance();
             },
             icon: const Icon(Icons.help, size: 16),
             label: Obx(

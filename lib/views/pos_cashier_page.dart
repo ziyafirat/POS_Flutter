@@ -5,6 +5,7 @@ import '../controllers/app_controller.dart';
 import '../controllers/language_controller.dart';
 import '../services/web_api_service.dart';
 import '../widgets/almaya_header.dart';
+import '../widgets/responsive_button_row.dart';
 
 class PosCashierPage extends StatefulWidget {
   const PosCashierPage({super.key});
@@ -28,7 +29,7 @@ class _PosCashierPageState extends State<PosCashierPage> {
     _logger.i('POS Cashier Page loaded - logging is working!');
 
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: Colors.grey[300],
       body: Column(
         children: [
           const AlmayaHeader(pageTitle: 'POS CASHIER'),
@@ -39,7 +40,7 @@ class _PosCashierPageState extends State<PosCashierPage> {
                 Expanded(
                   flex: 3,
                   child: Container(
-                    color: Colors.white,
+                    color: Colors.grey[100],
                     child: Column(
                       children: [
                         // Header
@@ -52,7 +53,7 @@ class _PosCashierPageState extends State<PosCashierPage> {
                             children: [
                               Obx(
                                 () => Text(
-                                  'Total: ${controller.totalAmount.toStringAsFixed(2)} TL',
+                                  'Total: ${controller.totalAmount.toStringAsFixed(2)} AED',
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -204,7 +205,7 @@ class _PosCashierPageState extends State<PosCashierPage> {
                 Expanded(
                   flex: 2,
                   child: Container(
-                    color: Colors.white,
+                    color: Colors.grey[100],
                     child: Column(
                       children: [
                         // Header with PosSubState and Display
@@ -280,7 +281,7 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Colors.grey[100],
                                   border: Border.all(color: Colors.grey[300]!),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -328,83 +329,37 @@ class _PosCashierPageState extends State<PosCashierPage> {
                           ),
                         ),
 
-                        // Top Action Buttons (Dark Gray)
+                        // ALL BUTTONS GROUPED AT TOP - Action Buttons + Numeric Keypad
                         Expanded(
-                          flex: 2,
+                          flex: 10, // Increased flex to accommodate all buttons
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'E VOUCHERS',
-                                        Icons.card_giftcard,
-                                        Colors.grey[800]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<67>',
-                                        ), // Using refund for vouchers
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'DONATION',
-                                        Icons.favorite,
-                                        Colors.grey[800]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<100>',
-                                        ), // Using nosale for donation
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
+                                // Row 1: Customer Screen only (keeping essential navigation)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.wide(
+                                      _buildActionButton(
                                         'CUSTOMER SCREEN',
                                         Icons.monitor,
-                                        Colors.grey[800]!,
+                                        Colors.red[800]!,
                                         () => controller
                                             .navigateToStart(), // Exit POS Cashier mode
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'Print',
-                                        Icons.print,
-                                        Colors.grey[800]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<100>',
-                                        ), // Using nosale
-                                      ),
-                                    ),
+                                    ResponsiveButton.normal(
+                                      Container(),
+                                    ), // Empty space
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Function Buttons (Blue and Green)
-                        Expanded(
-                          flex: 3,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              children: [
-                                // Blue Buttons Row 1
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
+                                const SizedBox(height: 10),
+                                // Row 2: Blue Buttons (3 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
                                         'CLEAR',
                                         Icons.clear,
                                         Colors.blue[600]!,
@@ -414,21 +369,9 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'NOSALE',
-                                        Icons.flash_on,
-                                        Colors.blue[600]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<100>',
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
+
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
                                         'OVERRIDE',
                                         Icons.build,
                                         Colors.blue[600]!,
@@ -441,11 +384,11 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                // Blue Buttons Row 2
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
+                                // Row 3: Price, Enter, Void (3 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
                                         'PRICE',
                                         Icons.attach_money,
                                         Colors.blue[600]!,
@@ -455,21 +398,19 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'ENTER',
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
+                                        'NOSALE',
                                         Icons.arrow_forward,
-                                        Colors.red[600]!,
+                                        Colors.blue[600]!,
                                         () => _sendApiCommand(
                                           webApiService,
-                                          '<80>',
+                                          '<100>',
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
                                         'VOID',
                                         Icons.delete,
                                         Colors.blue[600]!,
@@ -482,25 +423,41 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                // Green Buttons Row
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'RESCAN',
+                                // Row 4: QTY and OFFLINE EFT (2 equal width buttons)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
+                                        'QTY',
                                         Icons.refresh,
-                                        Colors.green[600]!,
+                                        Colors.blue[600]!,
                                         () => _sendApiCommand(
                                           webApiService,
                                           '<75>',
                                         ), // Using quantity for rescan
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'OFFLINE EFT',
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
+                                        'CASH',
                                         Icons.credit_card,
+                                        Colors.green[600]!,
+                                        () => _sendApiCommand(
+                                          webApiService,
+                                          '<91>',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                // Row 5: Payment Buttons (2 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
+                                        'OFFLINE EFT',
+                                        Icons.money,
                                         Colors.green[600]!,
                                         () => _sendApiCommand(
                                           webApiService,
@@ -508,51 +465,11 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'UNSCANNED',
-                                        Icons.camera_alt,
-                                        Colors.green[600]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<100>',
-                                        ), // Using nosale
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Payment Buttons (Red)
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'CASH',
-                                        Icons.money,
-                                        Colors.red[600]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<91>',
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
                                         'CREDIT CARD',
                                         Icons.credit_card,
-                                        Colors.red[600]!,
+                                        Colors.green[600]!,
                                         () => _sendApiCommand(
                                           webApiService,
                                           '<92>',
@@ -562,105 +479,119 @@ class _PosCashierPageState extends State<PosCashierPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'AUTO PICKUP',
-                                        Icons.local_shipping,
-                                        Colors.red[600]!,
-                                        () => _sendApiCommand(
-                                          webApiService,
-                                          '<100>',
-                                        ), // Using nosale
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
+                                // Row 6: Auto Pickup and Total (2 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
                                         'TOTAL',
-                                        Icons.grid_view,
-                                        Colors.red[600]!,
+                                        Icons.local_shipping,
+                                        Colors.blue[600]!,
                                         () => _sendApiCommand(
                                           webApiService,
                                           '<81>',
+                                        ), // Using nosale
+                                      ),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
+                                        'ENTER',
+                                        Icons.grid_view,
+                                        Colors.blue[600]!,
+                                        () => _sendApiCommand(
+                                          webApiService,
+                                          '<80>',
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
+                                const SizedBox(height: 25),
 
-                        // Numeric Keypad (Dark Gray)
-                        Expanded(
-                          flex: 3,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              children: [
-                                // Row 1: 7, 8, 9
-                                Row(
-                                  children: [
-                                    Expanded(child: _buildNumberButton('7')),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('8')),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('9')),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                // Row 2: 4, 5, 6
-                                Row(
-                                  children: [
-                                    Expanded(child: _buildNumberButton('4')),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('5')),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('6')),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                // Row 3: 1, 2, 3
-                                Row(
-                                  children: [
-                                    Expanded(child: _buildNumberButton('1')),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('2')),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('3')),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                // Row 4: *, 0, SignOn
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        '*',
-                                        Icons.close,
-                                        Colors.grey[800]!,
-                                        () {},
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: _buildNumberButton('0')),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: _buildActionButton(
-                                        'SignOn',
-                                        Icons.login,
-                                        Colors.grey[800]!,
+                                // Row 6: Auto Pickup and Total (2 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildActionButton(
+                                        'SIGNON/OFF',
+                                        Icons.local_shipping,
+                                        Colors.blue[600]!,
                                         () => _sendApiCommand(
                                           webApiService,
                                           '<61>',
-                                        ),
+                                        ), // Using nosale
                                       ),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('<78>'),
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 15),
+
+                                // NUMERIC KEYPAD SECTION - Added to top group
+                                // Row 7: 7, 8, 9 (3 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('7'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('8'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('9'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Row 8: 4, 5, 6 (3 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('4'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('5'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('6'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Row 9: 1, 2, 3 (3 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('1'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('2'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('3'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
+                                // Row 10: <78>, 0, SignOn/Off (3 equal width)
+                                ResponsiveButtonRow(
+                                  buttons: [
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('0'),
+                                    ),
+                                    ResponsiveButton.normal(
+                                      _buildNumberButton('00'),
+                                    ),
+                                  ],
+                                ),
+
+                                // Spacer to push everything to the top
+                                Expanded(child: Container()),
                               ],
                             ),
                           ),

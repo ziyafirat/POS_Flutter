@@ -13,7 +13,7 @@ class StartPage extends StatelessWidget {
     final LanguageController langController = Get.find<LanguageController>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[300],
       body: Column(
         children: [
           // Header with Almaya logo

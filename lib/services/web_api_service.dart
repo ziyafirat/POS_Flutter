@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import '../controllers/app_controller.dart';
-import '../models/app_state.dart';
 import 'usb_printer_service.dart';
 
 class WebApiService extends GetxController {
@@ -13,20 +13,15 @@ class WebApiService extends GetxController {
   final Logger _logger = Logger();
   Timer? _apiTimer;
   bool _isRunning = false;
+  bool _requestInProgress = false;
+  final Random _rand = Random();
 
-  // Flag to track if 1010 state has been received (to skip 1002 after 1010)
-  bool _hasReceived1010 = false;
-
-  // Flag to track if 7006 printer text has been sent (to send only once)
-  bool _hasSent7006PrinterText = false;
-
-  // Store the latest receipt data for printing
-  String? _latestReceiptText;
+  // Flag to track if MPOS TXN END is present in current receipt to prevent duplicate printing
+  bool _mposTxnEndPresent = false;
 
   // API Configuration
   String _baseUrl =
       'http://192.168.2.100:50000/AEFProcess/restaefprocess/aefrun/posService';
-  static const Duration _loopInterval = Duration(milliseconds: 1000);
 
   // Observable properties
   final RxBool _isConnected = false.obs;
@@ -54,69 +49,82 @@ class WebApiService extends GetxController {
     super.onClose();
   }
 
-  /// Start the API loop that runs every 3 seconds
-  void startApiLoop() {
+  /// Start the adaptive API loop
+  void startApiLoop({bool immediate = true}) {
     if (_isRunning) {
       _logger.w('API loop is already running');
       return;
     }
 
-    _logger.i(
-      'Starting API loop with ${_loopInterval.inMilliseconds}ms interval',
-    );
+    _logger.i('Starting adaptive API loop (with jitter)');
     _isRunning = true;
     _isConnected.value = true;
 
-    // Start the timer
-    _apiTimer = Timer.periodic(_loopInterval, (timer) {
-      _makeApiRequest();
-    });
-
-    // Make initial request immediately
-    _makeApiRequest();
+    scheduleNext(immediate: immediate);
   }
 
   /// Stop the API loop
   void stopApiLoop() {
-    if (!_isRunning) {
-      _logger.w('API loop is not running');
-      return;
-    }
-
-    _logger.i('Stopping API loop');
     _isRunning = false;
-    _isConnected.value = false;
     _apiTimer?.cancel();
     _apiTimer = null;
+    _logger.i('API loop stopped');
+  }
+
+  /// Schedule the next API request with jitter
+  void scheduleNext({bool immediate = false}) {
+    if (!_isRunning) return;
+
+    // Base interval = 0.5s (500ms), jitter ±15%
+    const baseSecs = 0.5;
+    final jitter = 0.85 + (_rand.nextDouble() * 0.30);
+    final delaySecs = (baseSecs * jitter).clamp(0.5, 5.0);
+    final delay = immediate
+        ? Duration.zero
+        : Duration(milliseconds: (delaySecs * 1000).round());
+
+    _apiTimer?.cancel();
+    _apiTimer = Timer(delay, () async {
+      if (!_isRunning) return;
+
+      if (_requestInProgress) {
+        // Skip this cycle to avoid overlap
+        scheduleNext();
+        return;
+      }
+
+      _requestInProgress = true;
+      try {
+        await _makeApiRequest().timeout(const Duration(seconds: 10));
+      } catch (e) {
+        _requestCount.value++;
+        _lastError.value = e.toString();
+        _logger.e('API request error: $e');
+      } finally {
+        _requestInProgress = false;
+      }
+
+      // Schedule next cycle
+      scheduleNext();
+    });
   }
 
   /// Make a single API request
   Future<void> _makeApiRequest() async {
     try {
-      _logger.d('Making API request #${_requestCount.value + 1}');
-
-      // Prepare request data matching cURL command exactly
       final bodyData = _prepareRequestData();
 
-      // Make HTTP POST request with exact cURL headers
-      final response = await http
-          .post(
-            Uri.parse(_baseUrl),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(bodyData),
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(bodyData),
+      );
 
-      // Update counters
       _requestCount.value++;
 
-      // Handle response
       if (response.statusCode == 200) {
         _lastResponse.value = response.body;
         _lastError.value = '';
-        _logger.d('API request successful: ${response.body}');
-
-        // Process the response
         _processApiResponse(response.body);
       } else {
         _lastError.value = 'HTTP ${response.statusCode}: ${response.body}';
@@ -185,6 +193,23 @@ class WebApiService extends GetxController {
     }
   }
 
+  /// Manually reset MPOS TXN END flag (for testing or manual reset)
+  void resetMposTxnEndFlag() {
+    _mposTxnEndPresent = false;
+    _logger.i('🔄 MPOS TXN END flag manually reset');
+    print('🔄 MPOS TXN END flag manually reset');
+  }
+
+  /// Get current MPOS TXN END flag status (for debugging)
+  bool get mposTxnEndPresent => _mposTxnEndPresent;
+
+  /// Test method to simulate receipt processing (for testing MPOS TXN END logic)
+  void testProcessReceipt(String receiptText) {
+    // Convert to base64 format as the API would send it
+    final base64Receipt = base64Encode(utf8.encode(receiptText));
+    _processReceipt(base64Receipt);
+  }
+
   /// Process API response and update app state
   void _processApiResponse(String responseBody) {
     try {
@@ -193,26 +218,22 @@ class WebApiService extends GetxController {
       final responseData = jsonDecode(cleanedResponseBody);
 
       // Update total amount from BalanceDue - Process for ANY substate
-      print('🔥 LATEST CODE RUNNING - BalanceDue Check 🔥');
+      // print('🔥 LATEST CODE RUNNING - BalanceDue Check 🔥'); // Disabled - too verbose
       if (responseData['BalanceDue'] != null &&
           responseData['BalanceDue'].toString().isNotEmpty &&
           responseData['BalanceDue'] != 'null') {
         final balanceDueString = responseData['BalanceDue'].toString().trim();
         final balanceDue = double.tryParse(balanceDueString) ?? 0.0;
 
-        print(
-          '🔥 LATEST CODE: Processing BalanceDue: "$balanceDueString" -> $balanceDue',
-        );
+        // print('🔥 LATEST CODE: Processing BalanceDue: "$balanceDueString" -> $balanceDue'); // Disabled - too verbose
 
         // Update total amount immediately
         final appController = Get.find<AppController>();
         appController.updateTotalAmount(balanceDue);
 
-        print('💰 LATEST CODE: Updated total amount: $balanceDue AED');
+        // print('💰 LATEST CODE: Updated total amount: $balanceDue AED'); // Disabled - too verbose
       } else {
-        print(
-          '🔥 LATEST CODE: BalanceDue not found or empty: ${responseData['BalanceDue']}',
-        );
+        // print('🔥 LATEST CODE: BalanceDue not found or empty: ${responseData['BalanceDue']}'); // Disabled - too verbose
       }
 
       // Process Display field for screen display
@@ -388,21 +409,22 @@ class WebApiService extends GetxController {
   /// Process ItemLine and add to scanned items
   void _processItemLine(String itemLine) {
     try {
-      _logger.d('Processing ItemLine: $itemLine');
+      // _logger.d('Processing ItemLine: $itemLine'); // Disabled - too verbose
       final decodedItems = _decodeBase64Lines(itemLine);
-      _logger.d('Decoded ${decodedItems.length} items: $decodedItems');
+      // _logger.d('Decoded ${decodedItems.length} items: $decodedItems'); // Disabled - too verbose
 
       final appController = Get.find<AppController>();
 
       // Process all items from API response and replace the current list
-      final List<String> processedItems = [];
+      final List<String> processedItems = <String>[];
 
       for (final item in decodedItems) {
-        if (item.trim().isNotEmpty) {
-          _logger.d('Processing item: $item');
+        final trimmedItem = item.trim();
+        if (trimmedItem.isNotEmpty) {
+          // _logger.d('Processing item: $item'); // Disabled - too verbose
           // Parse new item format: Barcode:Eng Name:Ara Name:UOM:Price:V/R:Qty
-          final parts = item.split(':');
-          _logger.d('Item parts (${parts.length}): $parts');
+          final parts = trimmedItem.split(':');
+          // _logger.d('Item parts (${parts.length}): $parts'); // Disabled - too verbose
 
           if (parts.length >= 7) {
             final barcode = parts[0];
@@ -416,16 +438,14 @@ class WebApiService extends GetxController {
             // Convert price: divide by 100 and format with 2 decimal places
             final price = _convertPrice(rawPrice);
 
-            _logger.d(
-              'Parsed - Barcode: $barcode, EngName: $engName, AraName: $araName, UOM: $uom, RawPrice: $rawPrice, ConvertedPrice: $price, VR: $vr, Qty: $qty',
-            );
+            // _logger.d('Parsed - Barcode: $barcode, EngName: $engName, AraName: $araName, UOM: $uom, RawPrice: $rawPrice, ConvertedPrice: $price, VR: $vr, Qty: $qty'); // Disabled - too verbose
 
             // Format for display: Eng Name (Ara Name) - UOM - Price - Qty
             final displayName = araName.isNotEmpty
                 ? '$engName ($araName)'
                 : engName;
             final itemString = '$barcode:$displayName:$uom:$price:$qty:$vr';
-            _logger.d('Processing item: $itemString');
+            // _logger.d('Processing item: $itemString'); // Disabled - too verbose
             processedItems.add(itemString);
           } else {
             _logger.w('Item has insufficient parts (${parts.length}): $item');
@@ -434,9 +454,10 @@ class WebApiService extends GetxController {
       }
 
       // Replace the entire scanned items list with the current API response
+      // Use batch update to minimize UI rebuilds
       appController.setScannedItems(processedItems);
 
-      _logger.i('Processed ${decodedItems.length} items from ItemLine');
+      _logger.i('⚡ Fast-processed ${decodedItems.length} items from ItemLine');
     } catch (e) {
       _logger.e('Error processing ItemLine: $e');
     }
@@ -448,78 +469,51 @@ class WebApiService extends GetxController {
       final decodedReceipt = _decodeBase64Lines(receipt);
       final receiptText = decodedReceipt.join('\n');
 
-      // Store the latest receipt text for use in substate 7006
-      _latestReceiptText = receiptText;
-
-      _logger.i('Decoded receipt for printing:\n$receiptText');
+      // _logger.i('Decoded receipt for printing:\n$receiptText');
 
       // Check if receipt contains "MPOS TXN END" text
-      if (receiptText.contains('MPOS TXN END')) {
-        _logger.i(
-          'MPOS TXN END detected in receipt - navigating to printing page and printing receipt',
-        );
-        final appController = Get.find<AppController>();
-        appController.navigateToScreen(AppScreen.printing);
+      final containsMposTxnEnd = receiptText.contains('MPOS TXN END');
 
-        // Automatically print the receipt to USB Epson printer
-        _printReceiptToUsbPrinter(receiptText);
+      if (containsMposTxnEnd) {
+        // If MPOS TXN END is present and we haven't already processed it, print the receipt
+        if (!_mposTxnEndPresent) {
+          _logger.i('Decoded receipt for printing:\n$receiptText');
+          _logger.i(
+            'MPOS TXN END detected in receipt (first time) - navigating to printing page and printing receipt',
+          );
+          print('🖨️ MPOS TXN END: First occurrence - proceeding with print');
+
+          final appController = Get.find<AppController>();
+          appController.navigateToPrinting();
+
+          // Automatically print the receipt to USB Epson printer
+          _printReceiptToUsbPrinter(receiptText);
+
+          // Set flag to prevent duplicate printing
+          _mposTxnEndPresent = true;
+        } else {
+          _logger.i(
+            'MPOS TXN END detected in receipt (duplicate) - ignoring print request',
+          );
+          print(
+            '🖨️ MPOS TXN END: Duplicate detected - ignoring print request',
+          );
+        }
+      } else {
+        // If MPOS TXN END is not present, reset the flag
+        if (_mposTxnEndPresent) {
+          _logger.i(
+            'MPOS TXN END no longer present in receipt - resetting duplicate prevention flag',
+          );
+          print('🖨️ MPOS TXN END: No longer present - resetting flag');
+          _mposTxnEndPresent = false;
+        }
       }
 
       // Store receipt for printing (you can implement printing logic here)
       // For now, just log it
     } catch (e) {
       _logger.e('Error processing Receipt: $e');
-    }
-  }
-
-  /// Send printer text for PosSubState 7006
-  Future<void> _sendPrinterTextFor7006() async {
-    try {
-      _logger.i('Sending printer text for PosSubState 7006...');
-      print('🖨️ SUBSTATE 7006: Starting printer text send...');
-
-      // Get the USB printer service
-      final printerService = Get.find<UsbPrinterService>();
-
-      // Use the latest receipt text from API response, or fallback text if none available
-      String receiptText;
-      if (_latestReceiptText != null && _latestReceiptText!.isNotEmpty) {
-        receiptText = _latestReceiptText!;
-        _logger.i('Using API response receipt data for PosSubState 7006');
-        print('🖨️ SUBSTATE 7006: Using API response receipt data');
-        print(
-          '🖨️ SUBSTATE 7006: Receipt length: ${receiptText.length} characters',
-        );
-      } else {
-        // Fallback receipt text if no API receipt data is available
-        final now = DateTime.now();
-        receiptText =
-            '''
-=== SUBSTATE 7006 RECEIPT ===
-Date: ${now.toString().substring(0, 19)}
-Store: Almaya Supermarket
-Terminal: SCO-001
-SubState: 7006 Processing
-========================
-Transaction Processing...
-Please wait...
-========================
-Thank you for shopping!
-''';
-        _logger.w(
-          'No API receipt data available, using fallback text for PosSubState 7006',
-        );
-        print('⚠️ SUBSTATE 7006: No API receipt data, using fallback text');
-      }
-
-      // Print using testPrintV2 method
-      await printerService.testPrintV2(receiptText);
-
-      _logger.i('✅ PosSubState 7006 printer text sent successfully');
-      print('✅ SUBSTATE 7006: Printer text sent successfully');
-    } catch (e) {
-      _logger.e('❌ Failed to send PosSubState 7006 printer text: $e');
-      print('❌ SUBSTATE 7006: Failed to send printer text: $e');
     }
   }
 
@@ -550,12 +544,12 @@ Thank you for shopping!
 
   /// Decode base64 lines (similar to your getReceipt method)
   List<String> _decodeBase64Lines(String base64Text) {
-    List<String> lines = base64Text.split("\r\n");
+    List<String> lines = base64Text.split('\r\n');
     List<String> decodedLines = [];
 
     for (var line in lines) {
       if (line.trim().isEmpty) {
-        decodedLines.add(""); // keep empty lines
+        decodedLines.add(''); // keep empty lines
         continue;
       }
       try {

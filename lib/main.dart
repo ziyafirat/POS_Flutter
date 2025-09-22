@@ -4,9 +4,6 @@ import 'controllers/app_controller.dart';
 import 'services/scanner_service.dart';
 import 'views/start_page.dart';
 import 'views/item_scan_page.dart';
-import 'views/payment_page.dart';
-import 'views/processing_page.dart';
-import 'views/printing_page.dart';
 import 'views/error_page.dart';
 import 'views/alert_page.dart';
 import 'views/fraud_alert_page.dart';
@@ -61,15 +58,6 @@ class MainNavigationWrapper extends StatelessWidget {
           break;
         case AppScreen.itemScan:
           currentPage = const ItemScanPage();
-          break;
-        case AppScreen.payment:
-          currentPage = const PaymentPage();
-          break;
-        case AppScreen.processing:
-          currentPage = const ProcessingPage();
-          break;
-        case AppScreen.printing:
-          currentPage = const PrintingPage();
           break;
         case AppScreen.error:
           currentPage = const ErrorPage();

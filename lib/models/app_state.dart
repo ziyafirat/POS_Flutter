@@ -5,9 +5,6 @@ part 'app_state.g.dart';
 enum AppScreen {
   start,
   itemScan,
-  payment,
-  processing,
-  printing,
   error,
   alert,
   fraudAlert,

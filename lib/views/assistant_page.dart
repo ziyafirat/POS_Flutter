@@ -32,11 +32,11 @@ class _AssistantPageState extends State<AssistantPage> {
   void _initializeControllers() {
     try {
       if (!_controllersInitialized) {
-        lampController = Get.isRegistered<LampController>() 
-            ? Get.find<LampController>() 
+        lampController = Get.isRegistered<LampController>()
+            ? Get.find<LampController>()
             : Get.put(LampController(), permanent: true);
-        eftService = Get.isRegistered<NiVm>() 
-            ? Get.find<NiVm>() 
+        eftService = Get.isRegistered<NiVm>()
+            ? Get.find<NiVm>()
             : Get.put(NiVm(), permanent: true);
         _controllersInitialized = true;
         setState(() {});
@@ -55,7 +55,7 @@ class _AssistantPageState extends State<AssistantPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Assistant Mode'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.grey[600],
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -81,61 +81,73 @@ class _AssistantPageState extends State<AssistantPage> {
                 children: [
                   const Text(
                     'System Status',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  Obx(() => Row(
-                    children: [
-                      Icon(
-                        controller.appState.value.mqttStatus == ConnectionStatus.connected
-                            ? Icons.cloud_done
-                            : Icons.cloud_off,
-                        color: controller.appState.value.mqttStatus == ConnectionStatus.connected
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                      const SizedBox(width: 8),
-                      Text('MQTT: ${controller.appState.value.mqttStatus.name}'),
-                    ],
-                  )),
+                  Obx(
+                    () => Row(
+                      children: [
+                        Icon(
+                          controller.appState.value.mqttStatus ==
+                                  ConnectionStatus.connected
+                              ? Icons.cloud_done
+                              : Icons.cloud_off,
+                          color:
+                              controller.appState.value.mqttStatus ==
+                                  ConnectionStatus.connected
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'MQTT: ${controller.appState.value.mqttStatus.name}',
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  Obx(() => Row(
-                    children: [
-                      Icon(
-                        scannerService.isListening
-                            ? Icons.qr_code_scanner
-                            : Icons.qr_code_scanner_outlined,
-                        color: scannerService.isListening
-                            ? Colors.green
-                            : Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text('Scanner: ${scannerService.isListening ? "Listening" : "Stopped"}'),
-                    ],
-                  )),
+                  Obx(
+                    () => Row(
+                      children: [
+                        Icon(
+                          scannerService.isListening
+                              ? Icons.qr_code_scanner
+                              : Icons.qr_code_scanner_outlined,
+                          color: scannerService.isListening
+                              ? Colors.green
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Scanner: ${scannerService.isListening ? "Listening" : "Stopped"}',
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 5),
-                  Obx(() => Text(
-                    'Scans: ${scannerService.scanCount} | Last: ${scannerService.lastScannedCode.isEmpty ? "None" : scannerService.lastScannedCode}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  )),
+                  Obx(
+                    () => Text(
+                      'Scans: ${scannerService.scanCount} | Last: ${scannerService.lastScannedCode.isEmpty ? "None" : scannerService.lastScannedCode}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  Obx(() => Row(
-                    children: [
-                      Icon(
-                        printerService.isConnected
-                            ? Icons.print
-                            : Icons.print_disabled,
-                        color: printerService.isConnected
-                            ? Colors.green
-                            : Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text('Printer: ${printerService.printerStatus}'),
-                    ],
-                  )),
+                  Obx(
+                    () => Row(
+                      children: [
+                        Icon(
+                          printerService.isConnected
+                              ? Icons.print
+                              : Icons.print_disabled,
+                          color: printerService.isConnected
+                              ? Colors.green
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text('Printer: ${printerService.printerStatus}'),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -148,24 +160,23 @@ class _AssistantPageState extends State<AssistantPage> {
                             : Colors.grey,
                       ),
                       const SizedBox(width: 8),
-                      Text('EFT: ${eftService?.channelOpen == true ? "Connected" : "Disconnected"}'),
+                      Text(
+                        'EFT: ${eftService?.channelOpen == true ? "Connected" : "Disconnected"}',
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Test Buttons Section
             const Text(
               'Test Functions',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
-            
+
             Expanded(
               child: GridView.count(
                 crossAxisCount: 10,
@@ -215,7 +226,8 @@ class _AssistantPageState extends State<AssistantPage> {
                     Icons.add_shopping_cart,
                     Colors.purple,
                     () {
-                      final itemId = 'TEST_${DateTime.now().millisecondsSinceEpoch}';
+                      final itemId =
+                          'TEST_${DateTime.now().millisecondsSinceEpoch}';
                       controller.addScannedItem(itemId);
                       Get.snackbar(
                         'Success',
@@ -301,30 +313,36 @@ class _AssistantPageState extends State<AssistantPage> {
                       );
                     },
                   ),
-                  Obx(() => _buildTestButton(
-                    scannerService.isListening ? 'Stop Scanner' : 'Start Scanner',
-                    scannerService.isListening ? Icons.stop : Icons.play_arrow,
-                    scannerService.isListening ? Colors.red : Colors.green,
-                    () {
-                      if (scannerService.isListening) {
-                        scannerService.stopListening();
-                        Get.snackbar(
-                          'Scanner',
-                          'Scanner listening stopped',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
-                      } else {
-                        scannerService.startListening();
-                        Get.snackbar(
-                          'Scanner',
-                          'Scanner listening started',
-                          backgroundColor: Colors.green,
-                          colorText: Colors.white,
-                        );
-                      }
-                    },
-                  )),
+                  Obx(
+                    () => _buildTestButton(
+                      scannerService.isListening
+                          ? 'Stop Scanner'
+                          : 'Start Scanner',
+                      scannerService.isListening
+                          ? Icons.stop
+                          : Icons.play_arrow,
+                      scannerService.isListening ? Colors.red : Colors.green,
+                      () {
+                        if (scannerService.isListening) {
+                          scannerService.stopListening();
+                          Get.snackbar(
+                            'Scanner',
+                            'Scanner listening stopped',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          scannerService.startListening();
+                          Get.snackbar(
+                            'Scanner',
+                            'Scanner listening started',
+                            backgroundColor: Colors.green,
+                            colorText: Colors.white,
+                          );
+                        }
+                      },
+                    ),
+                  ),
                   _buildTestButton(
                     'Test Printer',
                     Icons.print,
@@ -337,10 +355,14 @@ class _AssistantPageState extends State<AssistantPage> {
                         if (Get.context != null) {
                           ScaffoldMessenger.of(Get.context!).showSnackBar(
                             SnackBar(
-                              content: Text(success 
-                                ? 'Test print sent successfully!' 
-                                : 'Test print failed - check printer connection'),
-                              backgroundColor: success ? Colors.green : Colors.red,
+                              content: Text(
+                                success
+                                    ? 'Test print sent successfully!'
+                                    : 'Test print failed - check printer connection',
+                              ),
+                              backgroundColor: success
+                                  ? Colors.green
+                                  : Colors.red,
                             ),
                           );
                         }
@@ -362,11 +384,14 @@ class _AssistantPageState extends State<AssistantPage> {
                     Colors.deepOrange,
                     () async {
                       try {
-                        print('🖨️ PRINTER DEBUG: Calling testPrintV2() with test receipt...');
-                        
+                        print(
+                          '🖨️ PRINTER DEBUG: Calling testPrintV2() with test receipt...',
+                        );
+
                         // Create test receipt text
                         final now = DateTime.now();
-                        final testReceipt = '''
+                        final testReceipt =
+                            '''
 === TEST RECEIPT ===
 Date: ${now.toString().substring(0, 19)}
 Store: Test Store
@@ -383,14 +408,18 @@ Total:          \$16.50
 MPOS TXN END
 Thank you!
 ''';
-                        
+
                         await printerService.testPrintV2(testReceipt);
-                        
-                        print('🖨️ PRINTER DEBUG: testPrintV2() completed without exception');
+
+                        print(
+                          '🖨️ PRINTER DEBUG: testPrintV2() completed without exception',
+                        );
                         if (Get.context != null) {
                           ScaffoldMessenger.of(Get.context!).showSnackBar(
                             const SnackBar(
-                              content: Text('Test Print V2 completed successfully!'),
+                              content: Text(
+                                'Test Print V2 completed successfully!',
+                              ),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -415,33 +444,37 @@ Thank you!
                     () async {
                       try {
                         final result = await printerService.listUsbDevices();
-                        
+
                         if (result['success'] == true) {
                           final deviceCount = result['deviceCount'] ?? 0;
                           final devices = result['devices'] as List? ?? [];
-                          
+
                           String message = 'Found $deviceCount USB devices:\n';
-                          
+
                           for (int i = 0; i < devices.length && i < 5; i++) {
                             final device = devices[i] as Map;
                             final vendorId = device['vendorId'];
                             final productId = device['productId'];
-                            final productName = device['productName'] ?? 'Unknown';
+                            final productName =
+                                device['productName'] ?? 'Unknown';
                             final isEpson = device['isEpson'] == true;
                             final isPrinter = device['isPrinter'] == true;
-                            
+
                             message += '\n${i + 1}. $productName';
-                            message += '\n   VID: $vendorId (${device['vendorIdHex']})';
-                            message += '\n   PID: $productId (${device['productIdHex']})';
+                            message +=
+                                '\n   VID: $vendorId (${device['vendorIdHex']})';
+                            message +=
+                                '\n   PID: $productId (${device['productIdHex']})';
                             if (isEpson) message += '\n   ⭐ EPSON DEVICE';
                             if (isPrinter) message += '\n   🖨️ PRINTER CLASS';
                             message += '\n';
                           }
-                          
+
                           if (devices.length > 5) {
-                            message += '\n... and ${devices.length - 5} more devices';
+                            message +=
+                                '\n... and ${devices.length - 5} more devices';
                           }
-                          
+
                           // Show in a dialog for better visibility
                           showDialog(
                             context: context,
@@ -458,12 +491,13 @@ Thank you!
                               ],
                             ),
                           );
-                          
                         } else {
                           if (Get.context != null) {
                             ScaffoldMessenger.of(Get.context!).showSnackBar(
                               SnackBar(
-                                content: Text('Failed to list devices: ${result['error']}'),
+                                content: Text(
+                                  'Failed to list devices: ${result['error']}',
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -628,23 +662,34 @@ Thank you!
                     () async {
                       try {
                         print('🏦 EFT DEBUG: Starting EFT transaction test...');
-                        
+
                         if (eftService != null) {
                           // Call the startTransaction method with test amount
-                          const testAmount = 100.00; // Test with 10.00 currency units
-                          print('🏦 EFT DEBUG: Calling eftService.startTransaction($testAmount)...');
-                          
-                          final success = await eftService!.startTransaction(testAmount);
-                          
-                          print('🏦 EFT DEBUG: startTransaction result: $success');
-                          
+                          const testAmount =
+                              100.00; // Test with 10.00 currency units
+                          print(
+                            '🏦 EFT DEBUG: Calling eftService.startTransaction($testAmount)...',
+                          );
+
+                          final success = await eftService!.startTransaction(
+                            testAmount,
+                          );
+
+                          print(
+                            '🏦 EFT DEBUG: startTransaction result: $success',
+                          );
+
                           if (Get.context != null) {
                             ScaffoldMessenger.of(Get.context!).showSnackBar(
                               SnackBar(
-                                content: Text(success 
-                                  ? 'EFT Transaction started successfully! Amount: \$${testAmount.toStringAsFixed(2)}'
-                                  : 'EFT Transaction failed to start'),
-                                backgroundColor: success ? Colors.green : Colors.red,
+                                content: Text(
+                                  success
+                                      ? 'EFT Transaction started successfully! Amount: \$${testAmount.toStringAsFixed(2)}'
+                                      : 'EFT Transaction failed to start',
+                                ),
+                                backgroundColor: success
+                                    ? Colors.green
+                                    : Colors.red,
                               ),
                             );
                           }
@@ -675,7 +720,7 @@ Thank you!
                 ],
               ),
             ),
-            
+
             // Current State Info
             Container(
               width: double.infinity,
@@ -697,9 +742,17 @@ Thank you!
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Obx(() => Text('Screen: ${controller.appState.value.currentScreen.name}')),
+                  Obx(
+                    () => Text(
+                      'Screen: ${controller.appState.value.currentScreen.name}',
+                    ),
+                  ),
                   Obx(() => Text('Items: ${controller.scannedItems.length}')),
-                  Obx(() => Text('Total: \$${controller.totalAmount.toStringAsFixed(2)}')),
+                  Obx(
+                    () => Text(
+                      'Total: ${controller.totalAmount.toStringAsFixed(2)} AED',
+                    ),
+                  ),
                   Obx(() => Text('Alert Active: ${controller.isAlertActive}')),
                 ],
               ),
@@ -717,44 +770,37 @@ Thank you!
     VoidCallback onPressed,
   ) {
     return ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         elevation: 2,
         shadowColor: Colors.black26,
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         minimumSize: const Size(0, 0),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
-          children: [
+        children: [
           Icon(icon, size: 14),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
   void _openMqttTestScreen(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const MqttTestWidget(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const MqttTestWidget()));
   }
 }

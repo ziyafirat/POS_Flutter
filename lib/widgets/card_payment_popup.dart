@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/language_controller.dart';
+import '../config/popup_config.dart';
 
 class CardPaymentPopup extends StatelessWidget {
   final double amount;
   final VoidCallback? onCancel;
 
-  const CardPaymentPopup({
-    super.key,
-    required this.amount,
-    this.onCancel,
-  });
+  const CardPaymentPopup({super.key, required this.amount, this.onCancel});
 
   @override
   Widget build(BuildContext context) {
@@ -19,16 +16,20 @@ class CardPaymentPopup extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.7,
+        width: MediaQuery.of(context).size.width * PopupConfig.largeWidth,
+        height: MediaQuery.of(context).size.height * PopupConfig.largeHeight,
+        constraints: const BoxConstraints(
+          maxWidth: PopupConfig.maxWidth,
+          maxHeight: PopupConfig.maxHeight,
+        ),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: PopupConfig.popupBackgroundColor,
+          borderRadius: BorderRadius.circular(PopupConfig.borderRadius),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 5,
+              color: Colors.black.withOpacity(PopupConfig.shadowOpacity),
+              blurRadius: PopupConfig.shadowBlurRadius,
+              spreadRadius: PopupConfig.shadowSpreadRadius,
             ),
           ],
         ),
@@ -37,7 +38,7 @@ class CardPaymentPopup extends StatelessWidget {
             // Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(PopupConfig.headerPadding),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
@@ -45,8 +46,8 @@ class CardPaymentPopup extends StatelessWidget {
                   colors: [Color(0xFFE31E24), Color(0xFFC41E3A)], // Almaya red
                 ),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  topLeft: Radius.circular(PopupConfig.borderRadius),
+                  topRight: Radius.circular(PopupConfig.borderRadius),
                 ),
               ),
               child: Row(
@@ -54,7 +55,7 @@ class CardPaymentPopup extends StatelessWidget {
                   const Icon(
                     Icons.credit_card,
                     color: Colors.white,
-                    size: 32,
+                    size: PopupConfig.headerIconSize,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -95,7 +96,7 @@ class CardPaymentPopup extends StatelessWidget {
             // Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(30),
+                padding: const EdgeInsets.all(PopupConfig.contentPadding),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -137,7 +138,7 @@ class CardPaymentPopup extends StatelessWidget {
                               ),
                             ),
                           ),
-                          
+
                           // Card number placeholder
                           const Positioned(
                             left: 24,
@@ -152,7 +153,7 @@ class CardPaymentPopup extends StatelessWidget {
                               ),
                             ),
                           ),
-                          
+
                           // Card holder
                           Positioned(
                             left: 24,
@@ -165,7 +166,7 @@ class CardPaymentPopup extends StatelessWidget {
                               ),
                             ),
                           ),
-                          
+
                           // Contactless symbol
                           const Positioned(
                             right: 24,
@@ -179,17 +180,19 @@ class CardPaymentPopup extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 40),
-                    
+
                     // Processing indicator
                     const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFE31E24),
+                      ),
                       strokeWidth: 4,
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Instruction text
                     Text(
                       langController.pleaseTapOrInsertCard,
@@ -200,9 +203,9 @@ class CardPaymentPopup extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     Text(
                       langController.processingYourPayment,
                       style: const TextStyle(
@@ -215,10 +218,10 @@ class CardPaymentPopup extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // Footer with payment methods
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(PopupConfig.headerPadding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -247,11 +250,7 @@ class CardPaymentPopup extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF6B7280),
-            size: 28,
-          ),
+          child: Icon(icon, color: const Color(0xFF6B7280), size: 28),
         ),
         const SizedBox(height: 8),
         Text(

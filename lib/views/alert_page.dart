@@ -53,7 +53,7 @@ class _AlertPageState extends State<AlertPage> {
     final AppController controller = Get.find<AppController>();
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.grey[400],
       body: Obx(() {
         final alert = controller.currentAlert;
         if (alert == null) {

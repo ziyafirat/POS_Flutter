@@ -12,7 +12,7 @@ class ErrorPage extends StatelessWidget {
     final AppController controller = Get.find<AppController>();
 
     return Scaffold(
-      backgroundColor: Colors.red[50],
+      backgroundColor: Colors.grey[300],
       body: Column(
         children: [
           const AlmayaHeader(pageTitle: 'ERROR'),

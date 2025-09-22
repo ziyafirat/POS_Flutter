@@ -3,13 +3,13 @@ import 'package:get/get.dart';
 import '../controllers/language_controller.dart';
 import '../config/popup_config.dart';
 
-class ProcessingPopup extends StatefulWidget {
+class PrintingPopup extends StatefulWidget {
   final String? title;
   final String? message;
   final IconData? icon;
   final int? autoCloseSeconds;
 
-  const ProcessingPopup({
+  const PrintingPopup({
     super.key,
     this.title,
     this.message,
@@ -18,10 +18,10 @@ class ProcessingPopup extends StatefulWidget {
   });
 
   @override
-  State<ProcessingPopup> createState() => _ProcessingPopupState();
+  State<PrintingPopup> createState() => _PrintingPopupState();
 }
 
-class _ProcessingPopupState extends State<ProcessingPopup>
+class _PrintingPopupState extends State<PrintingPopup>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
@@ -109,7 +109,7 @@ class _ProcessingPopupState extends State<ProcessingPopup>
               child: Row(
                 children: [
                   Icon(
-                    widget.icon ?? Icons.hourglass_empty,
+                    widget.icon ?? Icons.print,
                     color: Colors.white,
                     size: PopupConfig.headerIconSize,
                   ),
@@ -118,8 +118,8 @@ class _ProcessingPopupState extends State<ProcessingPopup>
                     child: Text(
                       widget.title ??
                           (langController.isEnglish
-                              ? 'Processing Payment'
-                              : 'معالجة الدفع'),
+                              ? 'Printing Receipt'
+                              : 'طباعة الإيصال'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: PopupConfig.headerFontSize,
@@ -138,26 +138,21 @@ class _ProcessingPopupState extends State<ProcessingPopup>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Animated processing icon
+                    // Animated printer icon
                     AnimatedBuilder(
                       animation: _pulseAnimation,
                       builder: (context, child) {
                         return Transform.scale(
                           scale: _pulseAnimation.value,
                           child: Container(
-                            width: 80,
-                            height: 80,
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE31E24).withOpacity(0.1),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFFE31E24),
-                                width: 3,
-                              ),
                             ),
                             child: Icon(
-                              widget.icon ?? Icons.credit_card_outlined,
-                              size: 40,
+                              widget.icon ?? Icons.print,
+                              size: 60,
                               color: const Color(0xFFE31E24),
                             ),
                           ),
@@ -165,44 +160,42 @@ class _ProcessingPopupState extends State<ProcessingPopup>
                       },
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
 
-                    // Processing text
+                    // Title
                     Text(
                       widget.title ??
                           (langController.isEnglish
-                              ? 'Processing Payment'
-                              : 'معالجة الدفع'),
+                              ? 'Printing Receipt'
+                              : 'طباعة الإيصال'),
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF374151),
                       ),
                       textAlign: TextAlign.center,
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 15),
 
+                    // Message
                     Text(
                       widget.message ??
                           (langController.isEnglish
-                              ? 'Please wait while we process your payment...'
-                              : 'يرجى الانتظار بينما نعالج دفعتك...'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF6B7280),
-                      ),
+                              ? 'Please wait while we print your receipt...'
+                              : 'يرجى الانتظار بينما نقوم بطباعة إيصالك...'),
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
                       textAlign: TextAlign.center,
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
 
                     // Progress indicator
                     const LinearProgressIndicator(
+                      backgroundColor: Color(0xFFE5E7EB),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         Color(0xFFE31E24),
                       ),
-                      backgroundColor: Color(0xFFE5E7EB),
                     ),
                   ],
                 ),
