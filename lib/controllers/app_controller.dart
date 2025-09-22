@@ -756,11 +756,52 @@ class AppController extends GetxController {
       _logger.i('📦 New items detected: $newItemsAdded items added');
       print('📦 New items detected: $newItemsAdded items added');
 
-      // Send item scan event to MQTT
-      _mqttService.sendItemScanEvent(uiStatus: 'ITEM_SCANNED');
+      // Get the latest scanned item for MQTT event
+      if (_parsedItems.isNotEmpty) {
+        final latestItem = _parsedItems.last;
+        _logger.i(
+          '📦 Latest item: barcode=${latestItem.barcode}, qty=${latestItem.qty}',
+        );
+        print(
+          '📦 Latest item: barcode=${latestItem.barcode}, qty=${latestItem.qty}',
+        );
 
-      // Also send item info event
-      _mqttService.sendItemInfoEvent(uiStatus: 'ITEM_ADDED');
+        // Send item scan event to MQTT with actual item data
+        _mqttService.sendItemScanEvent(
+          uiStatus: 'ITEM_SCANNED',
+          scanId: latestItem.barcode, // Use barcode as scan_id
+          itemId: latestItem.barcode, // Use barcode as item_id
+          quantityOfItems: int.tryParse(latestItem.qty) ?? 1,
+          isReturned: false,
+          isVoided: false,
+          isMobileScan: false,
+          scanMode: 'REGULAR',
+        );
+      } else {
+        // Fallback if no parsed items available
+        _mqttService.sendItemScanEvent(uiStatus: 'ITEM_SCANNED');
+      }
+
+      // Also send item info event with actual item data
+      if (_parsedItems.isNotEmpty) {
+        final latestItem = _parsedItems.last;
+        _mqttService.sendItemInfoEvent(
+          uiStatus: 'ITEM_ADDED',
+          scanId: latestItem.barcode, // Use barcode as scan_id
+          itemId: latestItem.barcode, // Use barcode as item_id
+          productPrice: latestItem.priceAsDouble, // Use actual price
+          productName: latestItem.displayName, // Use actual product name
+          quantityOfItems:
+              int.tryParse(latestItem.qty) ?? 1, // Use actual quantity
+          isReturned: false,
+          isVoided: false,
+          isMobileScan: false,
+          scanMode: 'REGULAR',
+        );
+      } else {
+        // Fallback if no parsed items available
+        _mqttService.sendItemInfoEvent(uiStatus: 'ITEM_ADDED');
+      }
     }
   }
 

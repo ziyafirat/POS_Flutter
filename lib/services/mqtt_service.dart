@@ -568,13 +568,17 @@ class MqttService {
     );
 
     final String message = jsonEncode({
-      'event_type': 'checkout_end',
       'id': documentId,
       'store_id': '123',
       'client_id': _terminalId,
       'transaction_id': transactionId,
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
       'checkout_id': _terminalId,
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'event_type': 'checkout_end',
+      'checkout_status': 'CHECKOUT COMPLETE',
+      'billing_amount': finalBillingAmount,
+      'voided_item_count': finalVoidedItemCount,
+      'bought_item_count': finalBoughtItemCount,
     });
 
     _logger.i(
@@ -596,7 +600,16 @@ class MqttService {
   }
 
   /// Send item scan event to MQTT when new item received from itemline API
-  Future<bool> sendItemScanEvent({String? uiStatus}) async {
+  Future<bool> sendItemScanEvent({
+    String? uiStatus,
+    String? scanId,
+    String? itemId,
+    int quantityOfItems = 1,
+    bool isReturned = false,
+    bool isVoided = false,
+    bool isMobileScan = false,
+    String scanMode = 'REGULAR',
+  }) async {
     final String itemScanTopic = '${_topicPrefix}$_terminalId/general/outbound';
 
     // Use existing transaction ID from checkout start, but generate NEW document ID for each request
@@ -614,14 +627,23 @@ class MqttService {
     );
 
     final String message = jsonEncode({
-      'event_type': 'item_scan',
       'id': documentId,
       'store_id': '123',
       'client_id': _terminalId,
       'transaction_id': transactionId,
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
       'checkout_id': _terminalId,
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'event_type': 'item_scan',
       'scan_type': 'PRODUCT',
+      'scan_id':
+          scanId ?? _generateUuid(), // Use provided scan ID or generate one
+      'item_id':
+          itemId ?? _generateUuid(), // Use provided item ID or generate one
+      'is_returned': isReturned,
+      'is_voided': isVoided,
+      'quantity_of_items': quantityOfItems,
+      'is_mobile_scan': isMobileScan,
+      'scan_mode': scanMode,
     });
 
     _logger.i(
@@ -632,12 +654,29 @@ class MqttService {
     );
     _logger.i('📦 [MQTT] UI Status: ${uiStatus ?? 'ITEM_SCANNED'}');
     print('📦 [MQTT] UI Status: ${uiStatus ?? 'ITEM_SCANNED'}');
+    _logger.i(
+      '📦 [MQTT] Item Details: scan_id=${scanId ?? 'generated'}, item_id=${itemId ?? 'generated'}, quantity=$quantityOfItems',
+    );
+    print(
+      '📦 [MQTT] Item Details: scan_id=${scanId ?? 'generated'}, item_id=${itemId ?? 'generated'}, quantity=$quantityOfItems',
+    );
 
     return await publishMessage(itemScanTopic, message);
   }
 
   /// Send item info event to MQTT
-  Future<bool> sendItemInfoEvent({String? uiStatus}) async {
+  Future<bool> sendItemInfoEvent({
+    String? uiStatus,
+    String? scanId,
+    String? itemId,
+    double? productPrice,
+    String? productName,
+    int quantityOfItems = 1,
+    bool isReturned = false,
+    bool isVoided = false,
+    bool isMobileScan = false,
+    String scanMode = 'REGULAR',
+  }) async {
     final String itemInfoTopic = '${_topicPrefix}$_terminalId/general/outbound';
 
     // Use existing transaction ID from checkout start, but generate NEW document ID for each request
@@ -655,14 +694,25 @@ class MqttService {
     );
 
     final String message = jsonEncode({
-      'event_type': 'item_info',
       'id': documentId,
       'store_id': '123',
       'client_id': _terminalId,
       'transaction_id': transactionId,
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
       'checkout_id': _terminalId,
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'event_type': 'item_info',
       'scan_type': 'PRODUCT',
+      'scan_id':
+          scanId ?? _generateUuid(), // Use provided scan ID or generate one
+      'item_id':
+          itemId ?? _generateUuid(), // Use provided item ID or generate one
+      'product_price': productPrice ?? 0.0,
+      'product_name': productName ?? 'Unknown Product',
+      'is_voided': isVoided,
+      'is_returned': isReturned,
+      'quantity_of_items': quantityOfItems,
+      'is_mobile_scan': isMobileScan,
+      'scan_mode': scanMode,
     });
 
     _logger.i(
@@ -673,6 +723,12 @@ class MqttService {
     );
     _logger.i('📋 [MQTT] UI Status: ${uiStatus ?? 'ITEM_INFO'}');
     print('📋 [MQTT] UI Status: ${uiStatus ?? 'ITEM_INFO'}');
+    _logger.i(
+      '📋 [MQTT] Product Details: name=${productName ?? 'Unknown'}, price=${productPrice ?? 0.0}, qty=$quantityOfItems',
+    );
+    print(
+      '📋 [MQTT] Product Details: name=${productName ?? 'Unknown'}, price=${productPrice ?? 0.0}, qty=$quantityOfItems',
+    );
 
     return await publishMessage(itemInfoTopic, message);
   }
