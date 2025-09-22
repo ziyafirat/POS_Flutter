@@ -70,3 +70,7 @@ class AppBinding extends Bindings {
     // NavigationController removed - navigation is handled by MainNavigationWrapper
   }
 }
+
+
+
+
